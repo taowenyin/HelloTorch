@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+import torch.optim
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -82,6 +84,13 @@ def sentence2vec(sentence, dictionary):
     return 1.0 * vector / len(sentence)
 
 
+# 分类准确度
+def rightness(predictions, labels):
+    pred = torch.max(predictions.data, 1)[1]
+    rights = pred.eq(labels.data.view_as(pred)).sum()
+    return rights, len(labels)
+
+
 if __name__ == '__main__':
     good_file = 'data/good.txt'
     bad_file = 'data/bad.txt'
@@ -119,11 +128,61 @@ if __name__ == '__main__':
 
     # 生成数据集
     test_size = len(dataset) // 10
+    # 训练数据集
     train_data = dataset[2 * test_size:]
     train_label = labels[2 * test_size:]
-
+    # 验证数据集
     valid_data = dataset[:test_size]
     valid_label = labels[:test_size]
-
+    # 测试数据集
     test_data = dataset[test_size : 2 * test_size]
     test_label = labels[test_size : 2 * test_size]
+
+    # 构建模型
+    model = nn.Sequential(nn.Linear(len(diction), 10), nn.ReLU(), nn.Linear(10, 2), nn.LogSoftmax(dim=1))
+    # 定义损失函数为交叉熵
+    cost = torch.nn.NLLLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    records = []
+    losses = []
+
+    for epoch in range(10):
+        for i, data in enumerate(zip(train_data, train_label)):
+            x = torch.tensor(data[0], requires_grad=True, dtype=torch.float).view(1, -1)
+            y = torch.tensor(np.array([data[1]]), dtype=torch.long)
+
+            optimizer.zero_grad()
+            predict = model(x)
+            loss = cost(predict, y)
+            losses.append(loss.data.numpy())
+            loss.backward()
+            optimizer.step()
+
+            if i % 3000 == 0:
+                val_losses = []
+                rights = []
+                for j, val in enumerate(zip(valid_data, valid_label)):
+                    x = torch.tensor(val[0], requires_grad=True, dtype=torch.float).view(1, -1)
+                    y = torch.tensor(np.array([val[1]]), dtype=torch.long)
+                    predict = model(x)
+                    right = rightness(predict, y)
+                    rights.append(right)
+                    loss = cost(predict, y)
+                    val_losses.append(loss.data.numpy())
+
+                right_ratio = 1.0 * np.sum([i[0] for i in rights]) / np.sum([i[1] for i in rights])
+                print('第{}轮，训练损失：{:.2f}, 校验损失：{:.2f}, 校验准确率: {:.2f}'.format(epoch, np.mean(losses),
+                                                                            np.mean(val_losses), right_ratio))
+                records.append([np.mean(losses), np.mean(val_losses), right_ratio])
+
+    # 绘制误差曲线
+    a = [i[0] for i in records]
+    b = [i[1] for i in records]
+    c = [i[2] for i in records]
+    plt.plot(a, label='Train Loss')
+    plt.plot(b, label='Valid Loss')
+    plt.plot(c, label='Valid Accuracy')
+    plt.xlabel('Steps')
+    plt.ylabel('Loss & Accuracy')
+    plt.legend()
+    plt.show()
