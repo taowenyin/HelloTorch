@@ -116,3 +116,14 @@ if __name__ == '__main__':
     dataset = [dataset[i] for i in indices]
     labels = [labels[i] for i in indices]
     sentences = [sentences[i] for i in indices]
+
+    # 生成数据集
+    test_size = len(dataset) // 10
+    train_data = dataset[2 * test_size:]
+    train_label = labels[2 * test_size:]
+
+    valid_data = dataset[:test_size]
+    valid_label = labels[:test_size]
+
+    test_data = dataset[test_size : 2 * test_size]
+    test_label = labels[test_size : 2 * test_size]
