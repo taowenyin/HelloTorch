@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
@@ -24,3 +25,5 @@ if __name__ == '__main__':
     train_dataset = dsets.MNIST(root='./data', train=True, transform=transforms.ToTensor, download=True)
     # 获取测试数据
     test_dataset = dsets.MNIST(root='./data', train=False, transform=transforms.ToTensor)
+    # 加载训练数据，并对数据切分及打乱
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
