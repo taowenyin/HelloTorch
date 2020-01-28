@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.utils.data import SubsetRandomSampler
 
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
@@ -22,8 +23,28 @@ batch_size = 64
 
 if __name__ == '__main__':
     # 自动下载数据集，并提取训练数据，同时自动转化为Tensor数据
-    train_dataset = dsets.MNIST(root='./data', train=True, transform=transforms.ToTensor, download=True)
+    train_dataset = dsets.MNIST(root='./data', train=True, transform=transforms.ToTensor(), download=True)
     # 获取测试数据
-    test_dataset = dsets.MNIST(root='./data', train=False, transform=transforms.ToTensor)
+    test_dataset = dsets.MNIST(root='./data', train=False, transform=transforms.ToTensor())
     # 加载训练数据，并对数据切分及打乱
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+
+    indices = range(len(test_dataset))
+    # 生成验证集索引
+    indices_val = indices[:5000]
+    # 生成测试集索引
+    indices_test = indices[5000:]
+    sample_val = SubsetRandomSampler(indices_val)
+    sample_test = SubsetRandomSampler(indices_test)
+    # 定义验证集和测试集的加载器
+    validation_loader = DataLoader(dataset=test_dataset, batch_size=batch_size,
+                                   shuffle=False,  sampler=sample_val)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size,
+                             shuffle=False,  sampler=sample_test)
+
+    idx = 100
+    muteimg = train_dataset[idx][0].numpy()
+    plt.imshow(muteimg[0, ...])
+    plt.show()
+    print('标签是：', train_dataset[idx][1])
+
