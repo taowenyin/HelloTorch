@@ -3,6 +3,9 @@ import torch
 from utils.data.MnistData import MnistData
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
+from torch import nn, optim
+
+from model.AutoEncoderModel import AutoEncoderModel
 
 if __name__ == '__main__':
     # 每批数据的大小
@@ -34,4 +37,9 @@ if __name__ == '__main__':
     # 测试集加载器
     test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
-    print('xxx')
+    # 创建模型
+    model = AutoEncoderModel(28, 28)
+    # 均方差损失函数
+    criterion = nn.MSELoss()
+    # 采用Adam优化
+    optimizier = optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
