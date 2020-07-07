@@ -37,7 +37,7 @@ def collect_and_download(derivative, pipeline, strategy, out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    s3_pheno_file = open("../data/ABIDE/phenotypes/Phenotypic_V1_0b_preprocessed1.csv", "r")
+    s3_pheno_file = open("../../data/ABIDE/phenotypes/Phenotypic_V1_0b_preprocessed1.csv", "r")
     pheno_list = s3_pheno_file.readlines()
 
     header = pheno_list[0].split(",")
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     pipeline = arguments.get('pipeline', 'cpac')
     strategy = arguments.get('strategy', 'filt_global')
 
-    out_dir = os.path.abspath("../data/ABIDE/functionals/cpac/filt_global/")
+    out_dir = os.path.abspath("../../data/ABIDE/functionals/cpac/filt_global/")
 
     for derivative in arguments['<derivative>']:
         collect_and_download(derivative, pipeline, strategy, os.path.join(out_dir, derivative))
