@@ -5,7 +5,7 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn, optim
 
-from model.AutoEncoderModel import AutoEncoderModel
+from model.AutoEncoderModel import AutoEncoderModel, AutoEncoderType
 
 if __name__ == '__main__':
     # 每批数据的大小
@@ -19,16 +19,16 @@ if __name__ == '__main__':
 
     # 创建训练数据集
     train_dataset = TensorDataset(
-        torch.tensor(train_data, dtype=torch.float, requires_grad=True),
-        torch.tensor(train_labels, dtype=torch.float, requires_grad=True))
+        train_data.float().clone().detach().requires_grad_(True),
+        train_labels.float().clone().detach().requires_grad_(True))
     # 创建训练数据集
     test_dataset = TensorDataset(
-        torch.tensor(test_data, dtype=torch.float, requires_grad=True),
-        torch.tensor(test_labels, dtype=torch.float, requires_grad=True))
+        test_data.float().clone().detach().requires_grad_(True),
+        test_labels.float().clone().detach().requires_grad_(True))
     # 创建验证数据集
     validation_dataset = TensorDataset(
-        torch.tensor(validation_data, dtype=torch.float, requires_grad=True),
-        torch.tensor(validation_labels, dtype=torch.float, requires_grad=True))
+        validation_data.float().clone().detach().requires_grad_(True),
+        validation_labels.float().clone().detach().requires_grad_(True))
 
     # 创建训练数据加载器，并且设置每批数据的大小，以及每次读取数据时随机打乱数据
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
     # 创建模型
-    model = AutoEncoderModel(28, 28)
+    model = AutoEncoderModel(28, 28, AutoEncoderType.Multi)
     # 均方差损失函数
     criterion = nn.MSELoss()
     # 采用Adam优化

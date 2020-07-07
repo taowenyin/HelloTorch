@@ -17,8 +17,8 @@ class MnistData(IDataParse):
         # 获取手写数据集的测试数据集
         test_data = datasets.MNIST(root='./data', train=False, transform=data_tf)
 
-        test_data_labels = test_data.test_labels
-        test_data_data = test_data.test_data
+        test_data_labels = test_data.targets
+        test_data_data = test_data.data
         # 计算验证集和测试集的比例
         test_indices = int(len(test_data) * ratio)
 
@@ -29,7 +29,7 @@ class MnistData(IDataParse):
         self.__validation_labels = test_data_labels[test_indices:]
 
     def parse_train_data(self):
-        return self.__train_data.train_data, self.__train_data.train_labels
+        return self.__train_data.data, self.__train_data.targets
 
     def parse_validation_data(self):
         return self.__validation_data, self.__validation_labels
