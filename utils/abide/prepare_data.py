@@ -27,7 +27,7 @@ from docopt import docopt
 from functools import partial
 from sklearn import preprocessing
 from sklearn.model_selection import StratifiedKFold, train_test_split
-from utils.abide.utils import (load_phenotypes, format_config, run_progress, hdf5_handler)
+from utils.abide.prepare_utils import (load_phenotypes, format_config, run_progress, hdf5_handler)
 
 
 def compute_connectivity(functional):
@@ -92,7 +92,7 @@ def prepare_folds(hdf5, folds, pheno, derivatives, experiment):
 
 def load_patients_to_file(hdf5, pheno, derivatives):
 
-    download_root = "./data/functionals"
+    download_root = "../../data/ABIDE/functionals"
     derivatives_path = {
         "aal": "cpac/filt_global/rois_aal/{subject}_rois_aal.1D",
         "cc200": "cpac/filt_global/rois_cc200/{subject}_rois_cc200.1D",
@@ -137,11 +137,14 @@ if __name__ == "__main__":
     # 读取表型数据
     pheno = load_phenotypes(pheno_path)
 
+    # 创建HDF5数据文件
     hdf5 = hdf5_handler(bytes("../../data/ABIDE/abide.hdf5", encoding="utf8"), 'a')
 
+    # 不同的脑图谱
     valid_derivatives = ["cc200", "aal", "ez", "ho", "tt", "dosenbach160"]
     derivatives = [derivative for derivative in arguments["<derivative>"] if derivative in valid_derivatives]
 
+    #  如果没有患者数据，那么就要读取患者的MRI图片
     if "patients" not in hdf5:
         load_patients_to_file(hdf5, pheno, derivatives)
 
