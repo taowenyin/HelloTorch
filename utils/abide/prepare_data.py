@@ -72,11 +72,14 @@ def load_patients(subjs, tmpl, jobs=1):
     return dict(run_progress(partial_load_patient, subjs, message=msg, jobs=jobs))
 
 
+# 构建交叉验证的实验数据
 def prepare_folds(hdf5, folds, pheno, derivatives, experiment):
+    # 创建实验数据
     exps = hdf5.require_group("experiments")
     ids = pheno["FILE_ID"]
 
     for derivative in derivatives:
+        # 为每个脑图谱创建一个实验数据
         exp = exps.require_group(format_config(
             experiment,
             {
@@ -85,16 +88,15 @@ def prepare_folds(hdf5, folds, pheno, derivatives, experiment):
         ))
 
         exp.attrs["derivative"] = derivative
-
+        # 按照标签比例把数据分为n份，并把数据进行打散
         skf = StratifiedKFold(n_splits=folds, shuffle=True)
+        #
         for i, (train_index, test_index) in enumerate(skf.split(ids, pheno["STRAT"])):
             train_index, valid_index = train_test_split(train_index, test_size=0.33)
+            # 创建每个分组的实验数据
             fold = exp.require_group(str(i))
-
-            fold['train'] = [ind.encode('utf8') for ind in ids[train_index]] 
-
+            fold['train'] = [ind.encode('utf8') for ind in ids[train_index]]
             fold['valid'] = [indv.encode('utf8') for indv in ids[valid_index]]
- 
             fold["test"] = [indt.encode('utf8') for indt in ids[test_index]]
 
             # fold["train"] = ids[train_index].tolist()
@@ -163,25 +165,25 @@ if __name__ == "__main__":
     if "patients" not in hdf5:
         load_patients_to_file(hdf5, pheno, derivatives)
 
+    # 构建所有的交叉验证的实验数据
     if arguments["--whole"]:
         print ("Preparing whole dataset")
         prepare_folds(hdf5, folds, pheno, derivatives, experiment="{derivative}_whole")
 
+    # 构建男性的交叉验证的实验数据
     if arguments["--male"]:
-        
         print ("Preparing male dataset")
         pheno_male = pheno[pheno["SEX"] == "M"]
         prepare_folds(hdf5, folds, pheno_male, derivatives, experiment="{derivative}_male")
 
+    # 构建有阈值的交叉验证的实验数据
     if arguments["--threshold"]:
-        
         print ("Preparing thresholded dataset")
         pheno_thresh = pheno[pheno["MEAN_FD"] <= 0.2]
         prepare_folds(hdf5, folds, pheno_thresh, derivatives, experiment="{derivative}_threshold")
 
+    # 构建每个实验室的交叉验证的实验数据
     if arguments["--leave-site-out"]:
-        
-        # print('Hi')
         print ("Preparing leave-site-out dataset")
         for site in pheno["SITE_ID"].unique():
             pheno_without_site = pheno[pheno["SITE_ID"] != site]
