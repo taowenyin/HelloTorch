@@ -141,6 +141,7 @@ def load_patients_to_file(hdf5, pheno, derivatives):
             # 保存每个病人的数据
             patient_storage.create_dataset(derivative, data=func_data[pid])
 
+
 if __name__ == "__main__":
 
     random.seed(19)
