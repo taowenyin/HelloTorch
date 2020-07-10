@@ -90,11 +90,11 @@ def prepare_folds(hdf5, folds, pheno, derivatives, experiment):
         exp.attrs["derivative"] = derivative
         # 按照标签比例把数据分为n份，并把数据进行打散
         skf = StratifiedKFold(n_splits=folds, shuffle=True)
-        #
         for i, (train_index, test_index) in enumerate(skf.split(ids, pheno["STRAT"])):
             train_index, valid_index = train_test_split(train_index, test_size=0.33)
             # 创建每个分组的实验数据
             fold = exp.require_group(str(i))
+
             fold['train'] = [ind.encode('utf8') for ind in ids[train_index]]
             fold['valid'] = [indv.encode('utf8') for indv in ids[valid_index]]
             fold["test"] = [indt.encode('utf8') for indt in ids[test_index]]
