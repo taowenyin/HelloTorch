@@ -1,4 +1,5 @@
-from typing import Any
+import torch
+import utils.model.Settting as ModelSetting
 
 from torch import nn
 from enum import Enum
@@ -20,6 +21,9 @@ class AutoEncoderModel(nn.Module):
     '''
     def __init__(self, image_width, image_height, autoencoder_type = AutoEncoderType.Single):
         super(AutoEncoderModel, self).__init__()
+
+        # 初始化随机种子
+        ModelSetting.reset_torch()
 
         # 判断输入的自编码器类型是否正确
         if not (type(autoencoder_type) is AutoEncoderType):
