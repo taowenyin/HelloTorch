@@ -65,6 +65,7 @@ def hdf5_handler(filename, mode="r"):
         return f
 
 
+# 获取CV的训练数据、验证数据和测试数据
 def load_fold(patients, experiment, fold):
 
     derivative = experiment.attrs["derivative"]
