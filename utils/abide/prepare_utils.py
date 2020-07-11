@@ -9,6 +9,7 @@ import contextlib
 import multiprocessing
 import pandas as pd
 import numpy as np
+import torch
 # import tensorflow as tf
 # from model import ae
 # from tensorflow.python.framework import ops
@@ -18,14 +19,19 @@ identifier = '(([a-zA-Z]_)?([a-zA-Z0-9_]*))'
 replacement_field = '{' + identifier + '}'
 
 
-# def reset():
-#     tf.reset_default_graph()
-#     #ops.reset_default_graph()
-#     # tf.compat.v1.reset_default_graph()
-#     random.seed(19)
-#     np.random.seed(19)
-#     tf.set_random_seed(19)
-#     #tf.random.set_seed(19)
+# 重置系统随机种子
+def reset():
+    # tf.reset_default_graph()
+    # # ops.reset_default_graph()
+    # # tf.compat.v1.reset_default_graph()
+    # random.seed(19)
+    # np.random.seed(19)
+    # tf.set_random_seed(19)
+    # # tf.random.set_seed(19)
+
+    random.seed(19)
+    np.random.seed(19)
+    torch.manual_seed(19)
 
 
 # 读取表型数据
@@ -45,6 +51,7 @@ def load_phenotypes(pheno_path):
     return pheno[['FILE_ID', 'DX_GROUP', 'SEX', 'SITE_ID', 'MEAN_FD', 'SUB_IN_SMP', 'STRAT']]
 
 
+# 创建并读取HDF5数据文件
 def hdf5_handler(filename, mode="r"):
     h5py.File(filename, "a").close()
     propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
@@ -56,6 +63,7 @@ def hdf5_handler(filename, mode="r"):
         f = h5py.File(fid, mode)
         # f.attrs.create(dtype=h5py.special_dtype(vlen=str)) 
         return f
+
 
 def load_fold(patients, experiment, fold):
 
@@ -115,6 +123,7 @@ def elapsed_time(tstart):
     return "%d:%02d:%02d" % (h, m, s)
 
 
+# 启动线程读取数据
 def run_progress(callable_func, items, message=None, jobs=1):
 
     results = []
