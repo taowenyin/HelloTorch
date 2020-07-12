@@ -23,7 +23,7 @@ from utils.data.MnistData import MnistData
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn, optim
-from model.AutoEncoderModel import AutoEncoderModel, AutoEncoderType
+from model.AutoEncoderModel import AutoEncoderModel
 
 import utils.abide.prepare_utils as PrepareUtils
 
@@ -104,11 +104,9 @@ if __name__ == '__main__':
                 "experiment": experiment_cv,
             })
 
-            print('xxx')
-
-        print('xxx')
         # PrepareUtils.run_nn(hdf5, experiment[0], code_size_1, code_size_2)
 
+    a = AutoEncoderModel(1000, [50, 20, 30], 700)
     print('xxx')
 
     # # 每批数据的大小
