@@ -74,6 +74,9 @@ if __name__ == '__main__':
     # 第二个自编码器的隐藏层神经元数量
     code_size_2 = 600
 
+    # 定义训练、验证、测试数据
+    X_train = y_train = X_valid = y_valid = X_test = y_test = 0
+
     # 要训练的脑图谱列表排序
     experiments = sorted(experiments)
     # 循环训练所有脑图谱
@@ -105,6 +108,8 @@ if __name__ == '__main__':
             })
 
         # PrepareUtils.run_nn(hdf5, experiment[0], code_size_1, code_size_2)
+
+    torch.rand(X_train.shape)
 
     a = AutoEncoderModel(1000, [50, 20, 30], 700)
     print('xxx')
