@@ -17,6 +17,7 @@ Options:
 """
 
 import torch
+import numpy as np
 
 from docopt import docopt
 from utils.data.MnistData import MnistData
@@ -73,6 +74,8 @@ if __name__ == '__main__':
     code_size_1 = 1000
     # 第二个自编码器的隐藏层神经元数量
     code_size_2 = 600
+    # 第一个自编码器的去噪率
+    denoising_rate = 0.7
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -107,9 +110,9 @@ if __name__ == '__main__':
                 "experiment": experiment_cv,
             })
 
-        # PrepareUtils.run_nn(hdf5, experiment[0], code_size_1, code_size_2)
 
-    torch.rand(X_train.shape)
+    # 构建噪声
+    noise = np.random.uniform(0, 1 - denoising_rate, X_train.shape)
 
     a = AutoEncoderModel(1000, [50, 20, 30], 700)
     print('xxx')

@@ -25,6 +25,11 @@ class AutoEncoderModel(nn.Module):
                  is_denoising = False, denoising_rate = 0):
         super(AutoEncoderModel, self).__init__()
 
+        # 是否添加去噪
+        self.is_denoising = is_denoising
+        # 去噪比例
+        self.denoising_rate = denoising_rate
+
         # 自编码器的编码层
         encoderLayers = collections.OrderedDict()
         # 创建自编码器输入
@@ -61,6 +66,8 @@ class AutoEncoderModel(nn.Module):
         self.decoder = nn.Sequential(decoderLayers)
 
     def forward(self, x):
+        if self.is_denoising:
+            print('xxx')
         encoder = self.encoder(x)
         decoder = self.decoder(encoder)
         return encoder, decoder
