@@ -16,6 +16,11 @@ Options:
 
 """
 
+# https://www.pianshen.com/article/4518318920/
+# https://blog.csdn.net/BBJG_001/article/details/104510444
+# https://www.cnblogs.com/picassooo/p/12571282.html
+# https://www.cnblogs.com/rainsoul/p/11376180.html
+
 import torch
 import numpy as np
 
@@ -78,6 +83,8 @@ if __name__ == '__main__':
     denoising_rate = 0.7
     # 每批数据的大小
     batch_size = 100
+    # 自编码器1的学习率
+    learning_rate_1 = 0.0001
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -118,15 +125,15 @@ if __name__ == '__main__':
     #     torch.from_numpy(np.array(y_train).reshape(-1, 1)).float().clone().detach().requires_grad_(True))
     train_dataset = TensorDataset(
         torch.from_numpy(X_train).float().clone().detach(),
-        torch.from_numpy(np.array(y_train).reshape(-1, 1)).float().clone().detach())
+        torch.from_numpy(np.array(y_train).reshape(-1, 1)).clone().detach())
     # 创建测试数据集
     test_dataset = TensorDataset(
         torch.from_numpy(X_test).float().clone().detach(),
-        torch.from_numpy(np.array(y_test).reshape(-1, 1)).float().clone().detach())
+        torch.from_numpy(np.array(y_test).reshape(-1, 1)).clone().detach())
     # 创建验证数据集
     validation_dataset = TensorDataset(
         torch.from_numpy(X_valid).float().clone().detach(),
-        torch.from_numpy(np.array(y_valid).reshape(-1, 1)).float().clone().detach())
+        torch.from_numpy(np.array(y_valid).reshape(-1, 1)).clone().detach())
 
     # 创建训练数据加载器，并且设置每批数据的大小，以及每次读取数据时随机打乱数据
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
@@ -135,8 +142,10 @@ if __name__ == '__main__':
     # 测试集加载器
     test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
-    a = AutoEncoderModel(1000, [50, 20, 30], 700)
-    print('xxx')
+    # 构建自编码器1和自编码器2
+    ae_1 = AutoEncoderModel(19900, [1000], 19900)
+    # 使用随机梯度下降进行优化
+    optimizer = optim.SGD(ae_1.parameters(), lr=learning_rate_1)
 
     #
     # # 创建模型

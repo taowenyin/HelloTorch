@@ -97,6 +97,3 @@ class AutoEncoderModel(nn.Module):
         encoder = self.encoder(x)
         decoder = self.decoder(encoder)
         return encoder, decoder
-
-
-
