@@ -13,15 +13,10 @@ class AutoEncoderModel(nn.Module):
     input_layer: 输入层神经元数量
     hide_layers: 一半隐藏层神经元数量
     output_layer: 输出层神经元数量
-    learning_rate: 学习率
-    is_sparse: 是否稀疏
-    sparse_param: 稀疏参数
-    sparse_coeff: 稀疏系数
     is_denoising: 是否去噪
     denoising_rate: 去噪比例
     '''
     def __init__(self, input_layer, hide_layers, output_layer,
-                 learning_rate = 0, is_sparse = False, sparse_param = 0, sparse_coeff = 0,
                  is_denoising = False, denoising_rate = 0):
         super(AutoEncoderModel, self).__init__()
 
@@ -92,6 +87,7 @@ class AutoEncoderModel(nn.Module):
         self.decoder = nn.Sequential(decoderLayers)
 
     def forward(self, x):
+        # todo 添加噪声
         if self.is_denoising:
             print('xxx')
         encoder = self.encoder(x)

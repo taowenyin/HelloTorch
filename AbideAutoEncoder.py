@@ -25,11 +25,11 @@ import torch
 import numpy as np
 
 from docopt import docopt
-from utils.data.MnistData import MnistData
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn, optim
 from model.AutoEncoderModel import AutoEncoderModel
+from utils.loss.SparseAeLoss import SparseAeLoss
 
 import utils.abide.prepare_utils as PrepareUtils
 
@@ -85,6 +85,12 @@ if __name__ == '__main__':
     batch_size = 100
     # 自编码器1的学习率
     learning_rate_1 = 0.0001
+    # 稀疏参数
+    sparse_param = 0
+    # 稀疏系数
+    sparse_coeff = 0
+    # 训练周期
+    EPOCHS = 10
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -145,12 +151,25 @@ if __name__ == '__main__':
     # 构建自编码器1和自编码器2
     ae_1 = AutoEncoderModel(19900, [1000], 19900)
     # 使用随机梯度下降进行优化
-    optimizer = optim.SGD(ae_1.parameters(), lr=learning_rate_1)
+    optimizer_1 = optim.SGD(ae_1.parameters(), lr=learning_rate_1)
+    # 使用均方差作为损失函数，并增加KL散度正则项
+    criterion_1 = SparseAeLoss(sparse_param, sparse_coeff)
 
-    #
-    # # 创建模型
-    # model = AutoEncoderModel(28, 28, AutoEncoderType.Multi)
-    # # 均方差损失函数
-    # criterion = nn.MSELoss()
-    # # 采用Adam优化
-    # optimizier = optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-5)
+    # 开始训练
+    for epoch in range(EPOCHS):
+        # 打开dropout
+        ae_1.train()
+        # 训练所有数据
+        for batch_idx, (data, target) in enumerate(train_loader):
+            # 清空梯度
+            ae_1.zero_grad()
+            # 前向传播，返回编码器和解码器
+            encoder, decoder = ae_1(data)
+            # 获取误差
+            loss = criterion_1(decoder, data)
+            # 反向传播
+            loss.backward()
+            # 一步随机梯度下降算法
+            optimizer_1.step()
+            # 打印损失值
+            print('Loss: {0}'.format(loss))
