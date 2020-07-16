@@ -162,7 +162,7 @@ if __name__ == '__main__':
         # 训练所有数据
         for batch_idx, (data, target) in enumerate(train_loader):
             # 清空梯度
-            ae_1.zero_grad()
+            optimizer_1.zero_grad()
             # 前向传播，返回编码器和解码器
             encoder, decoder = ae_1(data)
             # 获取误差
