@@ -28,7 +28,7 @@ class AutoEncoderModel(nn.Module):
         # 自编码器的编码层
         encoderLayers = collections.OrderedDict()
         # 创建编码器的隐藏层
-        encoder_hide_layers = hide_layers[:int((len(hide_layers) / 2))]
+        encoder_hide_layers = hide_layers[:(1 if int((len(hide_layers) / 2)) == 0 else int((len(hide_layers) / 2)))]
 
         # 创建自编码器的编码输入
         encoderLayers['input_layer'] = nn.Linear(input_layer, encoder_hide_layers[0])

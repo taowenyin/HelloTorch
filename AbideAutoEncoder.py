@@ -90,7 +90,7 @@ if __name__ == '__main__':
     # 稀疏系数
     sparse_coeff = 0
     # 训练周期
-    EPOCHS = 10
+    EPOCHS = 50
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     #     torch.from_numpy(X_train).float().clone().detach().requires_grad_(True),
     #     torch.from_numpy(np.array(y_train).reshape(-1, 1)).float().clone().detach().requires_grad_(True))
     train_dataset = TensorDataset(
-        torch.from_numpy(X_train).float().clone().detach(),
+        torch.from_numpy(X_train).float().clone().detach().requires_grad_(),
         torch.from_numpy(np.array(y_train).reshape(-1, 1)).clone().detach())
     # 创建测试数据集
     test_dataset = TensorDataset(
@@ -151,22 +151,23 @@ if __name__ == '__main__':
     # 构建自编码器1和自编码器2
     ae_1 = AutoEncoderModel(19900, [1000], 19900)
     # 使用随机梯度下降进行优化
-    optimizer_1 = optim.SGD(ae_1.parameters(), lr=learning_rate_1)
+    optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
     # 使用均方差作为损失函数，并增加KL散度正则项
-    criterion_1 = SparseAeLoss(sparse_param, sparse_coeff)
+    # criterion_1 = SparseAeLoss(sparse_param, sparse_coeff)
+    criterion_1 = nn.MSELoss()
 
+    # 打开dropout
+    ae_1.train()
     # 开始训练
     for epoch in range(EPOCHS):
-        # 打开dropout
-        ae_1.train()
         # 训练所有数据
         for batch_idx, (data, target) in enumerate(train_loader):
-            # 清空梯度
-            optimizer_1.zero_grad()
             # 前向传播，返回编码器和解码器
             encoder, decoder = ae_1(data)
             # 获取误差
             loss = criterion_1(decoder, data)
+            # 清空梯度
+            optimizer_1.zero_grad()
             # 反向传播
             loss.backward()
             # 一步随机梯度下降算法
