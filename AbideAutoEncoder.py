@@ -153,7 +153,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
     # 构建自编码器1和自编码器2
-    ae_1 = AutoEncoderModel(19900, [1000], 19900)
+    ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
     # 使用随机梯度下降进行优化
     optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
     # 使用均方差作为损失函数，并增加KL散度正则项

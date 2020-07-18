@@ -87,9 +87,11 @@ class AutoEncoderModel(nn.Module):
         self.decoder = nn.Sequential(decoderLayers)
 
     def forward(self, x):
-        # todo 添加噪声
         if self.is_denoising:
-            print('xxx')
+            # 获取噪声
+            noise = torch.rand(x.shape) * (1 - self.denoising_rate)
+            # 获取噪声后的数据
+            x = torch.mul(x, noise)
         encoder = self.encoder(x)
         decoder = self.decoder(encoder)
         return encoder, decoder
