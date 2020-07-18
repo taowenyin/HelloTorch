@@ -20,9 +20,12 @@ Options:
 # https://blog.csdn.net/BBJG_001/article/details/104510444
 # https://www.cnblogs.com/picassooo/p/12571282.html
 # https://www.cnblogs.com/rainsoul/p/11376180.html
+# https://www.cnblogs.com/candyRen/p/12113091.html
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
+import utils.abide.prepare_utils as PrepareUtils
 
 from docopt import docopt
 from torch.utils.data import TensorDataset
@@ -31,7 +34,6 @@ from torch import nn, optim
 from model.AutoEncoderModel import AutoEncoderModel
 from utils.loss.SparseAeLoss import SparseAeLoss
 
-import utils.abide.prepare_utils as PrepareUtils
 
 if __name__ == '__main__':
     # 模型初始化
@@ -90,7 +92,9 @@ if __name__ == '__main__':
     # 稀疏系数
     sparse_coeff = 0
     # 训练周期
-    EPOCHS = 50
+    EPOCHS = 10
+    # 保存训练误差
+    train_error = []
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -174,3 +178,8 @@ if __name__ == '__main__':
             optimizer_1.step()
             # 打印损失值
             print('Loss: {0}'.format(loss))
+            train_error.append(loss)
+
+    # 显示损失值
+    plt.plot(range(len(train_error)), train_error)
+    plt.show()
