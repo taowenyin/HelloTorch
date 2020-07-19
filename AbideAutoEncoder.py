@@ -153,6 +153,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
     # 构建自编码器1和自编码器2
+    # ae_1 = AutoEncoderModel(19900, [1000], 19900)
     ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
     # 使用随机梯度下降进行优化
     optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
@@ -166,8 +167,9 @@ if __name__ == '__main__':
     for epoch in range(EPOCHS):
         # 训练所有数据
         for batch_idx, (data, target) in enumerate(train_loader):
+            data_ = data.clone()
             # 前向传播，返回编码器和解码器
-            encoder, decoder = ae_1(data)
+            encoder, decoder = ae_1(data_)
             # 获取误差
             loss = criterion_1(decoder, data)
             # 清空梯度
