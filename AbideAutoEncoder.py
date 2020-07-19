@@ -21,6 +21,7 @@ Options:
 # https://www.cnblogs.com/picassooo/p/12571282.html
 # https://www.cnblogs.com/rainsoul/p/11376180.html
 # https://www.cnblogs.com/candyRen/p/12113091.html
+# https://blog.csdn.net/guyuealian/article/details/88426648
 
 import torch
 import numpy as np
@@ -32,7 +33,7 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn, optim
 from model.AutoEncoderModel import AutoEncoderModel
-from utils.loss.SparseAeLoss import SparseAeLoss
+from utils.regularization.KLDivergence import KLDivergence
 
 
 if __name__ == '__main__':
@@ -88,9 +89,9 @@ if __name__ == '__main__':
     # 自编码器1的学习率
     learning_rate_1 = 0.0001
     # 稀疏参数
-    sparse_param = 0
+    sparse_param = 0.2
     # 稀疏系数
-    sparse_coeff = 0
+    sparse_coeff = 0.5
     # 训练周期
     EPOCHS = 10
     # 保存训练误差
@@ -157,8 +158,9 @@ if __name__ == '__main__':
     ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
     # 使用随机梯度下降进行优化
     optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
-    # 使用均方差作为损失函数，并增加KL散度正则项
-    # criterion_1 = SparseAeLoss(sparse_param, sparse_coeff)
+    # KL散度正则项
+    sparsity_penalty = KLDivergence(sparse_param, sparse_coeff)
+    # 使用均方差作为损失函数
     criterion_1 = nn.MSELoss()
 
     # 打开dropout
@@ -170,8 +172,11 @@ if __name__ == '__main__':
             data_ = data.clone()
             # 前向传播，返回编码器和解码器
             encoder, decoder = ae_1(data_)
-            # 获取误差
+            # 获取误差，并添加正则项
             loss = criterion_1(decoder, data)
+            penalty = sparsity_penalty(encoder)
+            a = encoder.detach().numpy()
+            loss = loss + penalty
             # 清空梯度
             optimizer_1.zero_grad()
             # 反向传播

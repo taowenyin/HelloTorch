@@ -33,7 +33,7 @@ if __name__ == '__main__':
         predictions = a.expand_as(x_train) * x_train + b.expand_as(x_train)
         # 根据损失函数计算损失值
         loss = torch.mean((predictions - y_train) ** 2)
-        # print('Loss:', loss)
+        # print('Loss:', regularization)
         # 反向传播计算梯度
         loss.backward()
         # 根据梯度更新变量

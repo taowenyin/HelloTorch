@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
         # 每隔10000个周期打印损失函数的值
         if i % 10000 == 0:
-            print('loss:', loss)
+            print('regularization:', loss)
 
         # 对损失函数进行反向传播计算梯度
         loss.backward()
