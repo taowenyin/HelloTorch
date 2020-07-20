@@ -4,8 +4,6 @@ import utils.tools as tools
 
 from torch import nn
 
-# https://blog.csdn.net/h__ang/article/details/90720579
-
 
 class AutoEncoderModel(nn.Module):
     '''
@@ -92,6 +90,8 @@ class AutoEncoderModel(nn.Module):
             noise = tools.random_uniform(x.shape, 0, 1 - self.denoising_rate)
             # 获取噪声后的数据
             x = torch.mul(x, noise)
+
         encoder = self.encoder(x)
         decoder = self.decoder(encoder)
+
         return encoder, decoder

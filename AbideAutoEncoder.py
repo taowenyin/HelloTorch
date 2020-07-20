@@ -22,6 +22,7 @@ Options:
 # https://www.cnblogs.com/rainsoul/p/11376180.html
 # https://www.cnblogs.com/candyRen/p/12113091.html
 # https://blog.csdn.net/guyuealian/article/details/88426648
+# https://blog.csdn.net/h__ang/article/details/90720579
 
 import torch
 import numpy as np
@@ -154,7 +155,6 @@ if __name__ == '__main__':
     test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
     # 构建自编码器1和自编码器2
-    # ae_1 = AutoEncoderModel(19900, [1000], 19900)
     ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
     # 使用随机梯度下降进行优化
     optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
@@ -175,7 +175,6 @@ if __name__ == '__main__':
             # 获取误差，并添加正则项
             loss = criterion_1(decoder, data)
             penalty = sparsity_penalty(encoder)
-            a = encoder.detach().numpy()
             loss = loss + penalty
             # 清空梯度
             optimizer_1.zero_grad()
