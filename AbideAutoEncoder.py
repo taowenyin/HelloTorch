@@ -28,13 +28,14 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import utils.abide.prepare_utils as PrepareUtils
+import utils.functions as functions
+import pandas as pd
 
 from docopt import docopt
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn, optim
 from model.AutoEncoderModel import AutoEncoderModel
-from utils.regularization.KLDivergence import KLDivergence
 
 
 if __name__ == '__main__':
@@ -110,6 +111,7 @@ if __name__ == '__main__':
         # 从HDF5载入实验数据
         exp_storage = hdf5["experiments"][experiment]
 
+        # 循环获得每折数据
         for fold in exp_storage:
             experiment_cv = PrepareUtils.format_config("{experiment}_{fold}", {
                 "experiment": experiment,
@@ -131,60 +133,55 @@ if __name__ == '__main__':
                 "experiment": experiment_cv,
             })
 
-    # 创建训练数据集
-    # train_dataset = TensorDataset(
-    #     torch.from_numpy(X_train).float().clone().detach().requires_grad_(True),
-    #     torch.from_numpy(np.array(y_train).reshape(-1, 1)).float().clone().detach().requires_grad_(True))
-    train_dataset = TensorDataset(
-        torch.from_numpy(X_train).float().clone().detach().requires_grad_(),
-        torch.from_numpy(np.array(y_train).reshape(-1, 1)).clone().detach())
-    # 创建测试数据集
-    test_dataset = TensorDataset(
-        torch.from_numpy(X_test).float().clone().detach(),
-        torch.from_numpy(np.array(y_test).reshape(-1, 1)).clone().detach())
-    # 创建验证数据集
-    validation_dataset = TensorDataset(
-        torch.from_numpy(X_valid).float().clone().detach(),
-        torch.from_numpy(np.array(y_valid).reshape(-1, 1)).clone().detach())
+            # 创建训练数据集
+            train_dataset = TensorDataset(
+                torch.from_numpy(X_train).float().clone().detach().requires_grad_(),
+                torch.from_numpy(np.array(y_train).reshape(-1, 1)).clone().detach())
+            # 创建测试数据集
+            test_dataset = TensorDataset(
+                torch.from_numpy(X_test).float().clone().detach(),
+                torch.from_numpy(np.array(y_test).reshape(-1, 1)).clone().detach())
+            # 创建验证数据集
+            validation_dataset = TensorDataset(
+                torch.from_numpy(X_valid).float().clone().detach(),
+                torch.from_numpy(np.array(y_valid).reshape(-1, 1)).clone().detach())
 
-    # 创建训练数据加载器，并且设置每批数据的大小，以及每次读取数据时随机打乱数据
-    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-    # 创建验证集加载器
-    validation_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
-    # 测试集加载器
-    test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
+            # 创建训练数据加载器，并且设置每批数据的大小，以及每次读取数据时随机打乱数据
+            train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+            # 创建验证集加载器
+            validation_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
+            # 测试集加载器
+            test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
-    # 构建自编码器1和自编码器2
-    ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
-    # 使用随机梯度下降进行优化
-    optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
-    # KL散度正则项
-    sparsity_penalty = KLDivergence(sparse_param, sparse_coeff)
-    # 使用均方差作为损失函数
-    criterion_1 = nn.MSELoss()
+            # 构建自编码器1和自编码器2
+            ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
+            # 使用随机梯度下降进行优化
+            optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
+            # 使用均方差作为损失函数
+            criterion_1 = nn.MSELoss()
 
-    # 打开dropout
-    ae_1.train()
-    # 开始训练
-    for epoch in range(EPOCHS):
-        # 训练所有数据
-        for batch_idx, (data, target) in enumerate(train_loader):
-            data_ = data.clone()
-            # 前向传播，返回编码器和解码器
-            encoder, decoder = ae_1(data_)
-            # 获取误差，并添加正则项
-            loss = criterion_1(decoder, data)
-            penalty = sparsity_penalty(encoder)
-            loss = loss + penalty
-            # 清空梯度
-            optimizer_1.zero_grad()
-            # 反向传播
-            loss.backward()
-            # 一步随机梯度下降算法
-            optimizer_1.step()
-            # 打印损失值
-            print('Loss: {0}'.format(loss))
-            train_error.append(loss)
+            # 打开dropout
+            ae_1.train()
+            # 开始训练
+            for epoch in range(EPOCHS):
+                # 训练所有数据
+                for batch_idx, (data, target) in enumerate(train_loader):
+                    # 前向传播，返回编码器和解码器
+                    encoder, decoder = ae_1(data)
+                    # 获取误差，并添加正则项
+                    loss = criterion_1(decoder, data)
+                    # 计算KL散度
+                    penalty = functions.kl_divergence(encoder.detach().numpy(), sparse_param, sparse_coeff)
+                    loss = loss + penalty
+                    # 清空梯度
+                    optimizer_1.zero_grad()
+                    # 反向传播
+                    loss.backward()
+                    # 一步随机梯度下降算法
+                    optimizer_1.step()
+                    # 打印损失值
+                    print('Fold {0} Epoch {1} Batch {2} Train Loss: {3}'.format(fold, epoch, batch_idx, loss))
+                    train_error.append(loss)
 
     # 显示损失值
     plt.plot(range(len(train_error)), train_error)

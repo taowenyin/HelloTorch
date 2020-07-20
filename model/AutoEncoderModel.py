@@ -1,6 +1,6 @@
 import torch
 import collections
-import utils.tools as tools
+import utils.functions as functions
 
 from torch import nn
 
@@ -87,7 +87,7 @@ class AutoEncoderModel(nn.Module):
     def forward(self, x):
         if self.is_denoising:
             # 获取随机噪声
-            noise = tools.random_uniform(x.shape, 0, 1 - self.denoising_rate)
+            noise = functions.random_uniform(x.shape, 0, 1 - self.denoising_rate)
             # 获取噪声后的数据
             x = torch.mul(x, noise)
 
