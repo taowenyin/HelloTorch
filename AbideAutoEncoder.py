@@ -28,22 +28,14 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import utils.abide.prepare_utils as PrepareUtils
-import utils.functions as functions
-import pandas as pd
+import utils.abide.ae_model as AEModel
 
 from docopt import docopt
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
-from torch import nn, optim
-from model.AutoEncoderModel import AutoEncoderModel
 
 
 if __name__ == '__main__':
-    if torch.cuda.is_available():
-        gpu_status = True
-    else:
-        gpu_status = False
-
     # 模型初始化
     PrepareUtils.reset()
 
@@ -89,18 +81,8 @@ if __name__ == '__main__':
     code_size_1 = 1000
     # 第二个自编码器的隐藏层神经元数量
     code_size_2 = 600
-    # 第一个自编码器的去噪率
-    denoising_rate = 0.7
     # 每批数据的大小
     batch_size = 100
-    # 自编码器1的学习率
-    learning_rate_1 = 0.0001
-    # 稀疏参数
-    sparse_param = 0.2
-    # 稀疏系数
-    sparse_coeff = 0.5
-    # 训练周期
-    EPOCHS = 10
     # 保存训练、验证误差
     train_error = []
     validation_error = []
@@ -108,15 +90,6 @@ if __name__ == '__main__':
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
-
-    # 构建自编码器1和自编码器2
-    ae_1 = AutoEncoderModel(19900, [1000], 19900, is_denoising=True, denoising_rate=0.7)
-    if gpu_status:
-        ae_1 = ae_1.cuda()
-    # 使用随机梯度下降进行优化
-    optimizer_1 = optim.Adam(ae_1.parameters(), lr=learning_rate_1)
-    # 使用均方差作为损失函数
-    criterion_1 = nn.MSELoss()
 
     # 要训练的脑图谱列表排序
     experiments = sorted(experiments)
@@ -169,65 +142,9 @@ if __name__ == '__main__':
             # 测试集加载器
             test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
-            # 开始训练
-            for epoch in range(EPOCHS):
-                # 打开反向传播
-                ae_1.train()
-                # 训练所有数据
-                for batch_idx, (data, target) in enumerate(train_loader):
-                    if gpu_status:
-                        data = data.cuda()
-                    # 前向传播，返回编码器和解码器
-                    encoder, decoder = ae_1(data)
-                    # 获取误差，并添加正则项
-                    loss = criterion_1(decoder, data)
-                    # 计算KL散度
-                    penalty = functions.kl_divergence(encoder.cpu().detach().numpy(), sparse_param, sparse_coeff)
-                    loss = loss + penalty
-                    # 清空梯度
-                    optimizer_1.zero_grad()
-                    # 反向传播
-                    loss.backward()
-                    # 一步随机梯度下降算法
-                    optimizer_1.step()
-                    # 打印损失值
-                    print('Fold {0} Epoch {1} Batch {2} Train Loss: {3}'.format(fold, epoch, batch_idx, loss))
-                    train_error.append(loss.cpu())
-
-                    if batch_idx % 5 == 0 and batch_idx != 0:
-                        # 关闭反向传播
-                        ae_1.eval()
-                        # 开始验证所有数据
-                        for batch_idx, (data, target) in enumerate(validation_loader):
-                            if gpu_status:
-                                data = data.cuda()
-                            # 前向传播，返回编码器和解码器
-                            encoder, decoder = ae_1(data)
-                            # 获取误差，并添加正则项
-                            loss = criterion_1(decoder, data)
-                            # 计算KL散度
-                            penalty = functions.kl_divergence(encoder.cpu().detach().numpy(), sparse_param, sparse_coeff)
-                            loss = loss + penalty
-                            # 打印损失值
-                            print('Fold {0} Batch {1} Validation Loss: {2}'.format(fold, batch_idx, loss))
-                            validation_error.append(loss.cpu())
-
-            # 关闭反向传播
-            ae_1.eval()
-            # 开始验证所有数据
-            for batch_idx, (data, target) in enumerate(test_loader):
-                if gpu_status:
-                    data = data.cuda()
-                # 前向传播，返回编码器和解码器
-                encoder, decoder = ae_1(data)
-                # 获取误差，并添加正则项
-                loss = criterion_1(decoder, data)
-                # 计算KL散度
-                penalty = functions.kl_divergence(encoder.cpu().detach().numpy(), sparse_param, sparse_coeff)
-                loss = loss + penalty
-                # 打印损失值
-                print('Fold {0} Batch {1} Test Loss: {2}'.format(fold, batch_idx, loss))
-                test_error.append(loss.cpu())
+            # 得到训练结果
+            train_error, validation_error, test_error = AEModel.run_autoencoder_1(
+                fold, 19900, [code_size_1], 19900, train_loader, validation_loader, test_loader)
 
     # 显示损失值
     plt.plot(range(len(train_error)), train_error, label='Train')
