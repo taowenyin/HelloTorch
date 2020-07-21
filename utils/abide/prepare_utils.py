@@ -32,6 +32,7 @@ def reset():
     random.seed(19)
     np.random.seed(19)
     torch.manual_seed(19)
+    torch.cuda.manual_seed(19)
 
 
 # 读取表型数据

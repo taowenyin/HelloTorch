@@ -88,6 +88,8 @@ class AutoEncoderModel(nn.Module):
         if self.is_denoising:
             # 获取随机噪声
             noise = functions.random_uniform(x.shape, 0, 1 - self.denoising_rate)
+            if torch.cuda.is_available():
+                noise = noise.cuda()
             # 获取噪声后的数据
             x = torch.mul(x, noise)
 
