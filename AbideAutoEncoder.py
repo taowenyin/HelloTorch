@@ -36,9 +36,6 @@ from torch.utils.data import DataLoader
 
 
 if __name__ == '__main__':
-    # 模型初始化
-    PrepareUtils.reset()
-
     arguments = docopt(__doc__)
 
     # 表型数据位置
@@ -110,15 +107,15 @@ if __name__ == '__main__':
             X_train, y_train, X_valid, y_valid, X_test, y_test = PrepareUtils.load_fold(hdf5["patients"], exp_storage, fold)
 
             # 保存AE1模型的地址
-            ae1_model_path = PrepareUtils.format_config("./data/ABIDE/models/{experiment}_autoencoder-1.ckpt", {
+            ae1_model_path = PrepareUtils.format_config("./data/ABIDE/models/{experiment}_autoencoder-1.pkl", {
                 "experiment": experiment_cv,
             })
             # 保存AE2模型的地址
-            ae2_model_path = PrepareUtils.format_config("./data/ABIDE/models/{experiment}_autoencoder-2.ckpt", {
+            ae2_model_path = PrepareUtils.format_config("./data/ABIDE/models/{experiment}_autoencoder-2.pkl", {
                 "experiment": experiment_cv,
             })
             # 保存NN模型的地址
-            nn_model_path = PrepareUtils.format_config("./data/ABIDE/models/{experiment}_mlp.ckpt", {
+            nn_model_path = PrepareUtils.format_config("./data/ABIDE/models/{experiment}_mlp.pkl", {
                 "experiment": experiment_cv,
             })
 
@@ -144,7 +141,7 @@ if __name__ == '__main__':
 
             # 得到训练结果
             train_error, validation_error, test_error = AEModel.run_autoencoder_1(
-                fold, 19900, [code_size_1], 19900, train_loader, validation_loader, test_loader)
+                fold, 19900, [code_size_1], 19900, train_loader, validation_loader, test_loader, ae1_model_path)
 
     # 显示损失值
     plt.plot(range(len(train_error)), train_error, label='Train')
