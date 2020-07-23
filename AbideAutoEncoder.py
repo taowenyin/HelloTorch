@@ -81,9 +81,9 @@ if __name__ == '__main__':
     # 每批数据的大小
     batch_size = 100
     # 保存训练、验证误差
-    train_error = []
-    validation_error = []
-    test_error = []
+    ae_1_train_error = ae_2_train_error = []
+    ae_1_validation_error = ae_2_validation_error = []
+    ae_1_test_error = ae_2_test_error = []
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -139,12 +139,20 @@ if __name__ == '__main__':
             # 测试集加载器
             test_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
-            # 得到训练结果
-            train_error, validation_error, test_error = AEModel.run_autoencoder_1(
+            # 得到AE1的训练结果
+            ae_1_train_error, ae_1_validation_error, ae_1_test_error = AEModel.run_autoencoder_1(
                 fold, 19900, [code_size_1], 19900, train_loader, validation_loader, test_loader, ae1_model_path)
 
+            # 得到AE2的训练结果
+            ae_2_train_error, ae_2_validation_error, ae_2_test_error = AEModel.run_autoencoder_2(
+                fold, ae1_model_path, 19900, code_size_1, [code_size_2], code_size_1, train_loader, validation_loader, test_loader, ae2_model_path)
+
     # 显示损失值
-    plt.plot(range(len(train_error)), train_error, label='Train')
-    plt.plot(range(len(validation_error)), validation_error, label='Validation')
-    plt.plot(range(len(test_error)), test_error, label='Test')
+    plt.plot(range(len(ae_1_train_error)), ae_1_train_error, label='AE1-Train')
+    plt.plot(range(len(ae_1_validation_error)), ae_1_validation_error, label='AE1-Validation')
+    plt.plot(range(len(ae_1_test_error)), ae_1_test_error, label='AE1-Test')
+    plt.plot(range(len(ae_2_train_error)), ae_2_train_error, label='AE2-Train')
+    plt.plot(range(len(ae_2_validation_error)), ae_2_validation_error, label='AE2-Validation')
+    plt.plot(range(len(ae_2_test_error)), ae_2_test_error, label='AE2-Test')
+    plt.legend()
     plt.show()
