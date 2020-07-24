@@ -81,9 +81,9 @@ if __name__ == '__main__':
     # 每批数据的大小
     batch_size = 100
     # 保存训练、验证误差
-    ae_1_train_error = ae_2_train_error = []
-    ae_1_validation_error = ae_2_validation_error = []
-    ae_1_test_error = ae_2_test_error = []
+    ae_1_train_error = ae_2_train_error = nn_train_error = []
+    ae_1_validation_error = ae_2_validation_error = nn_validation_error = []
+    ae_1_test_error = ae_2_test_error = nn_test_error = []
 
     # 定义训练、验证、测试数据
     X_train = y_train = X_valid = y_valid = X_test = y_test = 0
@@ -145,7 +145,13 @@ if __name__ == '__main__':
 
             # 得到AE2的训练结果
             ae_2_train_error, ae_2_validation_error, ae_2_test_error = AEModel.run_autoencoder_2(
-                fold, ae1_model_path, 19900, code_size_1, [code_size_2], code_size_1, train_loader, validation_loader, test_loader, ae2_model_path)
+                fold, ae1_model_path, 19900, code_size_1, [code_size_2], code_size_1, train_loader,
+                validation_loader, test_loader, ae2_model_path)
+
+            # 得到MLP的训练结果
+            nn_train_error, nn_validation_error, nn_test_error = AEModel.run_finetuning(
+                fold, ae1_model_path, ae2_model_path, 19900, code_size_1, code_size_2,
+                train_loader, validation_loader, test_loader, nn_model_path)
 
     # 显示损失值
     plt.plot(range(len(ae_1_train_error)), ae_1_train_error, label='AE1-Train')

@@ -10,6 +10,9 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 import torch
+
+from model.AutoEncoderModel import AutoEncoderModel
+
 # import tensorflow as tf
 # from model import ae
 # from tensorflow.python.framework import ops
@@ -21,14 +24,6 @@ replacement_field = '{' + identifier + '}'
 
 # 重置系统随机种子
 def reset():
-    # tf.reset_default_graph()
-    # # ops.reset_default_graph()
-    # # tf.compat.v1.reset_default_graph()
-    # random.seed(19)
-    # np.random.seed(19)
-    # tf.set_random_seed(19)
-    # # tf.random.set_seed(19)
-
     random.seed(19)
     np.random.seed(19)
     torch.manual_seed(19)
@@ -175,24 +170,17 @@ def to_softmax(n_classes, classe):
     return sm
 
 
-# def load_ae_encoder(input_size, code_size, model_path):
-#     model = ae(input_size, code_size)
-#     init = tf.global_variables_initializer()
-#     try:
-#         with tf.Session() as sess:
-#             sess.run(init)
-#             saver = tf.train.Saver(model["params"], write_version= tf.train.SaverDef.V2)
-#             if os.path.isfile(model_path):
-#                 print ("Restoring", model_path)
-#                 saver.restore(sess, model_path)
-#             params = sess.run(model["params"])
-#             return {"W_enc": params["W_enc"], "b_enc": params["b_enc"]}
-#     finally:
-#         reset()
-#
-#
-# def sparsity_penalty(x, p, coeff):
-#     p_hat = tf.reduce_mean(tf.abs(x), 0)
-#     kl = p * tf.log(p / p_hat) + \
-#         (1 - p) * tf.log((1 - p) / (1 - p_hat))
-#     return coeff * tf.reduce_sum(kl)
+# 返回AE模型参数
+def load_ae_encoder(input_size, code_size, model_path):
+    model = AutoEncoderModel(input_size, np.array([code_size]), input_size)
+    model.load_state_dict(torch.load(model_path))
+    params = model.state_dict()
+    return {"W_enc": params['encoder.input_layer.weight'], "b_enc": params['encoder.input_layer.bias']}
+
+
+# 计算KL散度，正则项
+def sparsity_penalty(x, p, coeff):
+    p_hat = torch.mean(torch.abs(x), 0)
+    kl = p * torch.log(p / p_hat) + \
+        (1 - p) * torch.log((1 - p) / (1 - p_hat))
+    return coeff * torch.sum(kl)

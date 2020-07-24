@@ -140,15 +140,15 @@ def run_autoencoder_2(fold, prev_model_path, prev_input_layer, prev_code_layers,
     第二个自编码器
     :param fold: 折数
     :param prev_model_path: AE1模型的地址
-    :param prev_input_layer: AE1
-    :param prev_code_layers:
-    :param code_layers:
-    :param output_layer:
-    :param train_loader:
-    :param validation_loader:
-    :param test_loader:
-    :param model_path:
-    :return:
+    :param prev_input_layer: AE1模型的输入
+    :param prev_code_layers: AE1模型的编码层
+    :param code_layers: AE2模型的编码层
+    :param output_layer: AE2模型的输出层
+    :param train_loader: 训练数据
+    :param validation_loader: 验证数据
+    :param test_loader: 测试数据
+    :param model_path: 保存AE2模型的地址
+    :return: 训练误差、验证误差、测试误差
     """
 
     # 模型初始化
@@ -175,6 +175,9 @@ def run_autoencoder_2(fold, prev_model_path, prev_input_layer, prev_code_layers,
     prev_error = 9999999999
     # 当前验证集误差
     curr_validation_error = 0
+
+    if os.path.isfile(model_path):
+        return None, None, None
 
     # 构建上一个自编码器
     prev_model = AutoEncoderModel(prev_input_layer, np.array([prev_code_layers]), prev_input_layer, is_denoising=False)
@@ -255,3 +258,32 @@ def run_autoencoder_2(fold, prev_model_path, prev_input_layer, prev_code_layers,
             prev_error = curr_validation_error
 
     return train_error, validation_error, test_error
+
+
+def run_finetuning(fold, prev_1_model_path, prev_2_model_path,
+                   prev_1_input_layer, prev_1_code_layers, prev_2_code_layers,
+                   train_loader, validation_loader, test_loader, model_path):
+    # 多层感知机的学习率
+    learning_rate = 0.0005
+    # 第一层的dropout
+    dropout_1 = 0.6
+    # 第二层的dropout
+    dropout_2 = 0.8
+    # 开始的动量值
+    initial_momentum = 0.1
+    # 每次迭代增加动量，最终的动量值
+    final_momentum = 0.9
+    saturate_momentum = 100
+
+    EPOCHS = 100
+
+    start_saving_at = 20
+    batch_size = 10
+    n_classes = 2
+
+    # 载入AE 1模型
+    ae_1_model_param = PrepareUtils.load_ae_encoder(prev_1_input_layer, prev_1_code_layers, prev_1_model_path)
+    # 载入AE 2模型
+    ae_2_model_param = PrepareUtils.load_ae_encoder(prev_1_code_layers, prev_2_code_layers, prev_2_model_path)
+
+    return None
