@@ -286,4 +286,22 @@ def run_finetuning(fold, prev_1_model_path, prev_2_model_path,
     # 载入AE 2模型
     ae_2_model_param = PrepareUtils.load_ae_encoder(prev_1_code_layers, prev_2_code_layers, prev_2_model_path)
 
+    # 开始训练
+    for epoch in range(EPOCHS):
+        # 训练所有数据
+        for batch_idx, (data, target) in enumerate(train_loader):
+            # 输出进行one-hot编码
+            train_y = np.array([PrepareUtils.to_softmax(n_classes, y) for y in target])
+
+            if batch_idx % 5 == 0 and batch_idx != 0:
+                # 开始验证所有数据
+                for batch_idx, (data, target) in enumerate(validation_loader):
+                    # 输出进行one-hot编码
+                    validation_y = np.array([PrepareUtils.to_softmax(n_classes, y) for y in target])
+
+        # 开始验证所有数据
+        for batch_idx, (data, target) in enumerate(test_loader):
+            # 输出进行one-hot编码
+            test_y = np.array([PrepareUtils.to_softmax(n_classes, y) for y in target])
+
     return None

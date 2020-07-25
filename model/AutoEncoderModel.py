@@ -6,14 +6,14 @@ from torch import nn
 
 
 class AutoEncoderModel(nn.Module):
-    '''
+    """
     自编码器对象
-    input_layer: 输入层神经元数量
-    hide_layers: 一半隐藏层神经元数量
-    output_layer: 输出层神经元数量
-    is_denoising: 是否去噪
-    denoising_rate: 去噪比例
-    '''
+    :param input_layer: 输入层神经元数量
+    :param hide_layers: 一半隐藏层神经元数量
+    :param output_layer: 输出层神经元数量
+    :param is_denoising: 是否去噪
+    :param denoising_rate: 去噪比例
+    """
     def __init__(self, input_layer, hide_layers, output_layer,
                  is_denoising = False, denoising_rate = 0):
         super(AutoEncoderModel, self).__init__()
