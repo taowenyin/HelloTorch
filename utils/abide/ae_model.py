@@ -1,11 +1,13 @@
 import os
 import torch
+import collections
 import numpy as np
 import utils.functions as functions
 import utils.abide.prepare_utils as PrepareUtils
 
 from torch import nn, optim
 from model.AutoEncoderModel import AutoEncoderModel
+from model.MLPModel import MLPModel
 
 
 def run_autoencoder_1(fold, input_layer, code_layers, output_layer,
@@ -263,6 +265,14 @@ def run_autoencoder_2(fold, prev_model_path, prev_input_layer, prev_code_layers,
 def run_finetuning(fold, prev_1_model_path, prev_2_model_path,
                    prev_1_input_layer, prev_1_code_layers, prev_2_code_layers,
                    train_loader, validation_loader, test_loader, model_path):
+    # 模型初始化
+    PrepareUtils.reset()
+
+    if torch.cuda.is_available():
+        gpu_status = True
+    else:
+        gpu_status = False
+
     # 多层感知机的学习率
     learning_rate = 0.0005
     # 第一层的dropout
@@ -281,17 +291,78 @@ def run_finetuning(fold, prev_1_model_path, prev_2_model_path,
     batch_size = 10
     n_classes = 2
 
+    # 保存训练、验证误差
+    train_error = []
+    validation_error = []
+    test_error = []
+
     # 载入AE 1模型
     ae_1_model_param = PrepareUtils.load_ae_encoder(prev_1_input_layer, prev_1_code_layers, prev_1_model_path)
+    # 修改参数为MLP
+    ae_1_model_param = collections.OrderedDict(
+        [('layers.layer_0.weight', v) if k == 'W_enc' else (k, v) for k, v in ae_1_model_param.items()])
+    ae_1_model_param = collections.OrderedDict(
+        [('layers.layer_0.bias', v) if k == 'b_enc' else (k, v) for k, v in ae_1_model_param.items()])
     # 载入AE 2模型
     ae_2_model_param = PrepareUtils.load_ae_encoder(prev_1_code_layers, prev_2_code_layers, prev_2_model_path)
+    # 修改参数为MLP
+    ae_2_model_param = collections.OrderedDict(
+        [('layers.layer_1.weight', v) if k == 'W_enc' else (k, v) for k, v in ae_2_model_param.items()])
+    ae_2_model_param = collections.OrderedDict(
+        [('layers.layer_1.bias', v) if k == 'b_enc' else (k, v) for k, v in ae_2_model_param.items()])
+
+    # 创建多层感知机
+    model = MLPModel(prev_1_input_layer, [prev_1_code_layers, prev_2_code_layers], 2, [dropout_1, dropout_2])
+    # 在预训练的AE模型参数
+    model_param = model.state_dict()
+    model_param.update(ae_1_model_param)
+    model_param.update(ae_2_model_param)
+    model.load_state_dict(model_param)
+    if gpu_status:
+        model = model.cuda()
+    # 使用随机梯度下降进行优化
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    # 使用交叉殇作为损失函数
+    criterion = nn.CrossEntropyLoss()
 
     # 开始训练
     for epoch in range(EPOCHS):
+        # 计算动量饱和度
+        alpha = float(epoch) / float(saturate_momentum)
+        if alpha < 0.:
+            alpha = 0.
+        if alpha > 1.:
+            alpha = 1.
+        # 得到当前动量
+        momentum = initial_momentum * (1 - alpha) + alpha * final_momentum
+
+        # 修改优化器的momentum参数
+        optimizer_param = optimizer.state_dict()
+        optimizer_param['param_groups'][0]['momentum'] = momentum
+        optimizer.load_state_dict(optimizer_param)
+
         # 训练所有数据
         for batch_idx, (data, target) in enumerate(train_loader):
-            # 输出进行one-hot编码
-            train_y = np.array([PrepareUtils.to_softmax(n_classes, y) for y in target])
+            # 如果有GPU则把数据放到GPU中
+            if gpu_status:
+                data = data.cuda()
+                target = target.cuda()
+            # 把标签转化为一维数组
+            target = target.view(1, -1)[0]
+
+            # 前向传播，返回数据分类
+            train_y_hat = model(data)
+            # 获取误差
+            loss = criterion(train_y_hat, target)
+            # 清空梯度
+            optimizer.zero_grad()
+            # 反向传播
+            loss.backward()
+            # 一步随机梯度下降算法
+            optimizer.step()
+            # 打印损失值
+            print('MLP Fold {0} Epoch {1} Batch {2} Train Loss: {3}'.format(fold, epoch, batch_idx, loss))
+            train_error.append(loss.cpu())
 
             if batch_idx % 5 == 0 and batch_idx != 0:
                 # 开始验证所有数据
