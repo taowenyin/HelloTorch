@@ -3,3 +3,4 @@ data/MNIST
 data/ABIDE/functionals
 *.hdf5
 *.pkl
+test.py
