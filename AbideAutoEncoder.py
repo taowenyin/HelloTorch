@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # 载入表型数据
     pheno = PrepareUtils.load_phenotypes(pheno_path)
     # 载入数据集
-    hdf5 = PrepareUtils.hdf5_handler(bytes('./data/ABIDE/abide.hdf5', encoding='utf8'), 'a')
+    hdf5 = PrepareUtils.hdf5_handler(bytes('./data/ABIDE/abide_pcc.hdf5', encoding='utf8'), 'a')
 
     # 脑图谱的选择
     valid_derivatives = ["cc200", "aal", "ez", "ho", "tt", "dosenbach160"]

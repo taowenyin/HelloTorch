@@ -3,7 +3,7 @@
 Data preparation
 
 Usage:
-  prepare_data.py [--folds=N] [--whole] [--male] [--threshold] [--leave-site-out] [<derivative> ...]
+  prepare_data.py [--folds=N] [--whole] [--male] [--threshold] [--leave-site-out] [--lstm] [<derivative> ...]
   prepare_data.py (-h | --help)
 
 Options:
@@ -13,6 +13,7 @@ Options:
   --male              Prepare data of male subjects
   --threshold         Prepare data of thresholded subjects
   --leave-site-out    Prepare data using leave-site-out method
+  --lstm              Prepare data using lstm
   derivative          Derivatives to process
 
 """
@@ -52,13 +53,22 @@ def load_patient(subj, tmpl):
 
     # 获取ROI区域编号
     ROIs = ["#" + str(y) for y in sorted([int(x[1:]) for x in df.keys().tolist()])]
-    # 使用0替代无效元素，一共200行，表示200个感兴趣区域，每行一共有196个元素，表示每个感兴趣区域有196个值
-    functional = np.nan_to_num(df[ROIs].to_numpy().T).tolist()
+
+    if arguments["--lstm"]:
+        functional = np.nan_to_num(df[ROIs].to_numpy()).tolist()
+    else:
+        # 使用0替代无效元素，一共200行，表示200个感兴趣区域，每行一共有196个元素，表示每个感兴趣区域有196个值
+        functional = np.nan_to_num(df[ROIs].to_numpy().T).tolist()
+
     # axis=1表示沿着x轴数据标准化
     functional = preprocessing.scale(functional, axis=1)
-    # 计算并获得每两个ROI之间的连接性
-    functional = compute_connectivity(functional)
+
+    if not arguments["--lstm"]:
+        # 计算并获得每两个ROI之间的连接性
+        functional = compute_connectivity(functional)
+
     functional = functional.astype(np.float32)
+
     # 返回某个病人的ROI的连接性
     return subj, functional.tolist()
 
@@ -139,6 +149,7 @@ def load_patients_to_file(hdf5, pheno, derivatives):
             patient_storage.attrs["site"] = record["SITE_ID"]
             patient_storage.attrs["sex"] = record["SEX"]
             # 保存每个病人的数据
+            abc = func_data[pid]
             patient_storage.create_dataset(derivative, data=func_data[pid])
 
 
@@ -155,8 +166,12 @@ if __name__ == "__main__":
     # 读取表型数据
     pheno = load_phenotypes(pheno_path)
 
-    # 创建HDF5数据文件
-    hdf5 = hdf5_handler(bytes("../../data/ABIDE/abide.hdf5", encoding="utf8"), 'a')
+    if arguments["--lstm"]:
+        # 创建HDF5数据文件
+        hdf5 = hdf5_handler(bytes("../../data/ABIDE/abide_lstm.hdf5", encoding="utf8"), 'a')
+    else:
+        # 创建HDF5数据文件
+        hdf5 = hdf5_handler(bytes("../../data/ABIDE/abide_pcc.hdf5", encoding="utf8"), 'a')
 
     # 不同的脑图谱
     valid_derivatives = ["cc200", "aal", "ez", "ho", "tt", "dosenbach160"]
