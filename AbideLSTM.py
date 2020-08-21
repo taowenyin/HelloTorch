@@ -18,14 +18,13 @@ Options:
 
 
 import numpy as np
-import pandas as pd
 import torch
 import utils.abide.prepare_utils as PrepareUtils
+import time
 
 from docopt import docopt
 from model.LSTMModel import LSTMModel
 from torch import nn
-from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from data.ABIDE.AbideData import AbideData
@@ -37,13 +36,13 @@ def collate_fn(data):
     batch_data_y = []
     batch_data_length = []
 
-    for v, i in data:
+    for v in data:
         # 添加数据长度
-        batch_data_length.append(data[i][0].shape[0])
+        batch_data_length.append(v[0].shape[0])
         # 添加数据
-        batch_data_x.append(data[i][0])
+        batch_data_x.append(v[0])
         # 添加标签
-        batch_data_y.append(data[i][1])
+        batch_data_y.append(v[1])
 
     # 增加数据padding
     batch_data_x_pad = nn.utils.rnn.pad_sequence(batch_data_x, batch_first=True, padding_value=0)
@@ -55,6 +54,9 @@ def collate_fn(data):
 
 
 if __name__ == '__main__':
+    # 开始计时
+    start = time.process_time()
+
     arguments = docopt(__doc__)
 
     if torch.cuda.is_available():
@@ -97,7 +99,7 @@ if __name__ == '__main__':
         data_item_y = hdf5["patients"][i].attrs["y"]
         dataset_x.append(data_item_x)
         dataset_y.append(data_item_y)
-    train_x, test_x, train_y, test_y = train_test_split(dataset_x, dataset_y, test_size=0.3, shuffle=True)
+    train_x, test_x, train_y, test_y = train_test_split(dataset_x, dataset_y, test_size=0.3, shuffle=False)
     abideData_train = AbideData(train_x, train_y)
     abideData_test = AbideData(test_x, test_y)
     train_loader = DataLoader(dataset=abideData_train, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
@@ -126,4 +128,5 @@ if __name__ == '__main__':
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
                     epoch + 1, EPOCHS, i + 1, total_step, loss))
 
-    print('xx')
+    end = time.process_time()
+    print('Running time: %s Seconds' % (end - start))
