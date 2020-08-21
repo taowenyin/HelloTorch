@@ -60,10 +60,11 @@ def load_patient(subj, tmpl):
         # 使用0替代无效元素，一共200行，表示200个感兴趣区域，每行一共有196个元素，表示每个感兴趣区域有196个值
         functional = np.nan_to_num(df[ROIs].to_numpy().T).tolist()
 
-    # axis=1表示沿着x轴数据标准化
-    functional = preprocessing.scale(functional, axis=1)
-
-    if not arguments["--lstm"]:
+    if arguments["--lstm"]:
+        functional = np.array(functional)
+    else:
+        # axis=1表示沿着x轴数据标准化
+        functional = preprocessing.scale(functional, axis=1)
         # 计算并获得每两个ROI之间的连接性
         functional = compute_connectivity(functional)
 

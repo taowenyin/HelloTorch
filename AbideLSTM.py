@@ -19,13 +19,48 @@ Options:
 
 import numpy as np
 import pandas as pd
+import torch
 import utils.abide.prepare_utils as PrepareUtils
 
 from docopt import docopt
+from model.LSTMModel import LSTMModel
+from torch import nn
+from torch.utils.data import TensorDataset
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+from data.ABIDE.AbideData import AbideData
+
+
+# 不定长数据集的预处理
+def collate_fn(data):
+    batch_data_x = []
+    batch_data_y = []
+    batch_data_length = []
+
+    for v, i in data:
+        # 添加数据长度
+        batch_data_length.append(data[i][0].shape[0])
+        # 添加数据
+        batch_data_x.append(data[i][0])
+        # 添加标签
+        batch_data_y.append(data[i][1])
+
+    # 增加数据padding
+    batch_data_x_pad = nn.utils.rnn.pad_sequence(batch_data_x, batch_first=True, padding_value=0)
+    # 增加数据pack
+    batch_data_x_pack = nn.utils.rnn.pack_padded_sequence(batch_data_x_pad,
+                                                          batch_data_length, batch_first=True, enforce_sorted=False)
+
+    return batch_data_x_pack, torch.from_numpy(np.array(batch_data_y))
 
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
+
+    if torch.cuda.is_available():
+        gpu_status = True
+    else:
+        gpu_status = False
 
     # 表型数据位置
     pheno_path = './data/ABIDE/phenotypes/Phenotypic_V1_0b_preprocessed1.csv'
@@ -40,51 +75,55 @@ if __name__ == '__main__':
                    in arguments["<derivative>"]
                    if derivative in valid_derivatives]
 
-    # 标记实现数据
-    experiments = []
-    for derivative in derivatives:
+    # 保存所有数据
+    dataset_x = []
+    dataset_y = []
+    batch_size = 16
+    # 训练周期
+    EPOCHS = 50
+    # 学习率
+    learning_rate = 0.001
+    # LSTM隐藏层数量
+    lstm_hidden_num = 32
+    # LSTM输出层数量
+    lstm_output_num = 2
+    # LSTM层数量
+    lstm_layers_num = 2
 
-        config = {"derivative": derivative}
+    # 构建完整数据集
+    hdf5_dataset = hdf5["patients"]
+    for i in hdf5_dataset.keys():
+        data_item_x = torch.from_numpy(np.array(hdf5["patients"][i]['cc200']))
+        data_item_y = hdf5["patients"][i].attrs["y"]
+        dataset_x.append(data_item_x)
+        dataset_y.append(data_item_y)
+    train_x, test_x, train_y, test_y = train_test_split(dataset_x, dataset_y, test_size=0.3, shuffle=True)
+    abideData_train = AbideData(train_x, train_y)
+    abideData_test = AbideData(test_x, test_y)
+    train_loader = DataLoader(dataset=abideData_train, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
+    test_loader = DataLoader(dataset=abideData_test, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
-        if arguments["--whole"]:
-            experiments += [PrepareUtils.format_config("{derivative}_whole", config)],
+    # 创建LSTM模型
+    model = LSTMModel(train_x[0].shape[1], lstm_hidden_num, lstm_output_num, lstm_layers_num)
+    if gpu_status:
+        model = model.cuda()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-        if arguments["--male"]:
-            experiments += [PrepareUtils.format_config("{derivative}_male", config)]
+    total_step = len(train_loader)
+    for epoch in range(EPOCHS):
+        for i, (data_x, data_y) in enumerate(train_loader):
+            if gpu_status:
+                data_x = data_x.float().cuda()
+                data_y = data_y.cuda()
+            output, (hidden_n, cell_n) = model(data_x)
+            loss = criterion(output, data_y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-        if arguments["--threshold"]:
-            experiments += [PrepareUtils.format_config("{derivative}_threshold", config)]
+            if (i + 1) % 10 == 0:
+                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
+                    epoch + 1, EPOCHS, i + 1, total_step, loss))
 
-        if arguments["--leave-site-out"]:
-            for site in pheno["SITE_ID"].unique():
-                site_config = {"site": site}
-                experiments += [
-                    PrepareUtils.format_config("{derivative}_leavesiteout-{site}",
-                                               config, site_config)
-                ]
-
-    # 要训练的脑图谱列表排序
-    experiments = sorted(experiments)
-    # 循环训练所有脑图谱
-    for experiment_item in experiments:
-        # 获得脑图谱名称
-        experiment = experiment_item[0]
-        # 从HDF5载入实验数据
-        exp_storage = hdf5["experiments"][experiment]
-
-        # 循环获得每折数据
-        for fold in exp_storage:
-            experiment_cv = PrepareUtils.format_config("{experiment}_{fold}", {
-                "experiment": experiment,
-                "fold": fold,
-            })
-
-            # 获取训练数据、验证数据、测试数据
-            X_train, y_train, X_valid, y_valid, X_test, y_test = PrepareUtils.load_fold(
-                hdf5["patients"], exp_storage, fold)
-
-            print('xxx')
-
-        print('xxx')
-
-    print('xxx')
+    print('xx')
