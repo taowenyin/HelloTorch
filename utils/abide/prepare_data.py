@@ -150,7 +150,6 @@ def load_patients_to_file(hdf5, pheno, derivatives):
             patient_storage.attrs["site"] = record["SITE_ID"]
             patient_storage.attrs["sex"] = record["SEX"]
             # 保存每个病人的数据
-            abc = func_data[pid]
             patient_storage.create_dataset(derivative, data=func_data[pid])
 
 
