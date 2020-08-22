@@ -86,7 +86,7 @@ if __name__ == '__main__':
     # 学习率
     learning_rate = 0.001
     # LSTM隐藏层数量
-    lstm_hidden_num = 32
+    lstm_hidden_num = 64
     # LSTM输出层数量
     lstm_output_num = 2
     # LSTM层数量
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         data_item_y = hdf5["patients"][i].attrs["y"]
         dataset_x.append(data_item_x)
         dataset_y.append(data_item_y)
-    train_x, test_x, train_y, test_y = train_test_split(dataset_x, dataset_y, test_size=0.3, shuffle=False)
+    train_x, test_x, train_y, test_y = train_test_split(dataset_x, dataset_y, test_size=0.3, shuffle=True)
     abideData_train = AbideData(train_x, train_y)
     abideData_test = AbideData(test_x, test_y)
     train_loader = DataLoader(dataset=abideData_train, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
@@ -112,6 +112,8 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    # 开启训练
+    model.train()
     total_step = len(train_loader)
     for epoch in range(EPOCHS):
         for i, (data_x, data_y) in enumerate(train_loader):
@@ -125,8 +127,25 @@ if __name__ == '__main__':
             optimizer.step()
 
             if (i + 1) % 10 == 0:
-                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
+                print('Train Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
                     epoch + 1, EPOCHS, i + 1, total_step, loss))
 
+    # 关闭反向传播
+    model.eval()
+    total_step = len(test_loader)
+    correct = 0
+    total = 0
+    for i, (data_x, data_y) in enumerate(test_loader):
+        if gpu_status:
+            data_x = data_x.float().cuda()
+            data_y = data_y.cuda()
+        output, (hidden_n, cell_n) = model(data_x)
+        # 获得预测值
+        _, predicted = torch.max(output.data, 1)
+        total += data_y.size(0)
+        correct += (predicted == data_y).sum().item()
+
+    print('Test Accuracy of the model on the test data: {:.2f} %'.format(100 * correct / total))
+
     end = time.process_time()
-    print('Running time: %s Seconds' % (end - start))
+    print('Running time: {:.2f} Seconds'.format((end - start)))
