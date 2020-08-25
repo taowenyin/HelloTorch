@@ -1,6 +1,7 @@
 .idea
 data/MNIST
 data/ABIDE/functionals
+data/Path
 *.hdf5
 *.pkl
 test.py
