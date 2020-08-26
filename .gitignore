@@ -2,6 +2,7 @@
 data/MNIST
 data/ABIDE/functionals
 data/Path
+out/*.xlsx
 *.hdf5
 *.pkl
 test.py
