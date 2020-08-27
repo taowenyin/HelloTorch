@@ -25,8 +25,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     # 计算数据集Sheet标签
-    # index_range = np.arange(1, 115)
-    index_range = np.arange(1, 3)
+    index_range = np.arange(1, 115)
     sheets_name = []
     for v in index_range:
         sheets_name.append('Sheet{0}'.format(v))
@@ -51,8 +50,6 @@ if __name__ == '__main__':
     lon_lat_data_x = np.array(lon_lat_data_x)
 
     if arguments["--pre"]:
-        # 保存预测值
-        lon_lat_data_pred = {}
         # 表格纵轴
         pred_y_index = []
         pred_data = []
@@ -69,59 +66,77 @@ if __name__ == '__main__':
             line_reg.fit(lon_lat_data_x_item, lon_lat_data_y_item)
 
             # 数据预测
-            lon_lat_data_x_item_pred = np.array(lon_lat_data_x_item.shape[0]).reshape(-1, 1)
-            lon_lat_data_y_item_pred = line_reg.predict(lon_lat_data_x_item_pred)
-
-            lon_lat_data_item_pred_data = lon_lat_data_y_item_pred[0]
+            start = lon_lat_data_x_item.shape[0]
+            lon_lat_data_pred = []
+            # 计算后100步的预测值
+            for i in range(100):
+                lon_lat_data_x_item_pred = np.array(lon_lat_data_x_item.shape[0] + i).reshape(-1, 1)
+                lon_lat_data_y_item_pred = line_reg.predict(lon_lat_data_x_item_pred)
+                lon_lat_data_item_pred_data = lon_lat_data_y_item_pred[0]
+                lon_lat_data_pred.append(lon_lat_data_item_pred_data)
             lon_lat_data_item_coef_data = line_reg.coef_.flatten()
             lon_lat_data_item_intercept_data = line_reg.intercept_
-
-            # 保存预测相关数据
-            pred_item = {'pred': lon_lat_data_item_pred_data,
-                         'coef': lon_lat_data_item_coef_data,
-                         'intercept': lon_lat_data_item_intercept_data}
-            lon_lat_data_pred[name] = pred_item
+            lon_lat_data_pred = np.array(lon_lat_data_pred).flatten()
 
             # 构建保存数据
-            pred_data.append(np.hstack((np.hstack((lon_lat_data_item_pred_data, lon_lat_data_item_coef_data)),
+            pred_data.append(np.hstack((np.hstack((lon_lat_data_pred, lon_lat_data_item_coef_data)),
                                         lon_lat_data_item_intercept_data)))
             pred_y_index.append(name)
 
-        # 打印完整数据
-        print(lon_lat_data_pred)
+        # 创建数据的列标题
+        columns_name = []
+        for i in range(100):
+            columns_name.append('longitude-{0}'.format(i + 1))
+            columns_name.append('latitude-{0}'.format(i + 1))
+        columns_name.append('coef_1')
+        columns_name.append('coef_2')
+        columns_name.append('intercept_1')
+        columns_name.append('intercept_2s')
         # 创建数据
-        df = pd.DataFrame(pred_data, index=pred_y_index,
-                          columns=['longitude', 'latitude', 'coef_1', 'coef_2', 'intercept_1', 'intercept_1'])
+        df = pd.DataFrame(pred_data, index=pred_y_index, columns=columns_name)
         # 写入Excel文件
         df.to_excel('./out/pred_data.xlsx', sheet_name='pred_data')
 
+        print('Predict Data Finish...')
+
     if arguments["--cor"]:
+        # 相似性矩阵
+        sim_arr = []
+        # 表格纵轴
+        sim_index = []
         for i in range(len(lon_lat_data_y)):
             lon_lat_data_item = lon_lat_data_y[i]
+            sim_arr_item = []
+            # 获取对象唯一编号
+            name = dataset[i][0][0]
+            sim_index.append(name)
             for k in range(len(lon_lat_data_y)):
                 if i == k:
+                    sim_arr_item.append(str(1))
                     continue
 
                 # 获得要计算相关性的对象
                 lon_lat_data_com = lon_lat_data_y[k]
 
-                # 计算数据均值
-                lon_lat_data_item_mu = np.mean(lon_lat_data_item, axis=1)
-                lon_lat_data_com_mu = np.mean(lon_lat_data_com, axis=1)
+                # 计算余弦相似性
+                sum_sim = 0
+                for j in range(len(lon_lat_data_com)):
+                    A = lon_lat_data_item[j]
+                    B = lon_lat_data_com[j]
+                    num = np.dot(A, B.T)
+                    denom = np.linalg.norm(A) * np.linalg.norm(B)
+                    cos = num / denom  # 余弦值
+                    sim = 0.5 + 0.5 * cos  # 归一化
+                    sum_sim = sum_sim + cos
+                sim = sum_sim / len(lon_lat_data_com)
+                # 保存相似性数据
+                sim_arr_item.append(str(sim))
+            # 保存相似性数据
+            sim_arr.append(sim_arr_item)
 
-                # 计算数据纬度
-                data_dim = lon_lat_data_com.shape[1]
+        # 创建数据
+        df = pd.DataFrame(sim_arr, index=sim_index, columns=sim_index)
+        # 写入Excel文件
+        df.to_excel('./out/sim_data.xlsx', sheet_name='sim_data')
 
-                # 计算数据的标准差
-                std_item = np.std(lon_lat_data_item, axis=1, ddof=data_dim - 1)
-                std_com = np.std(lon_lat_data_com, axis=1, ddof=data_dim - 1)
-
-                cov = np.dot(lon_lat_data_item, lon_lat_data_com.T) - data_dim * np.dot(
-                    lon_lat_data_item_mu[:, np.newaxis], lon_lat_data_com_mu[np.newaxis, :])
-
-                cor = cov / np.dot(std_item[:, np.newaxis], std_com[np.newaxis, :])
-
-                print('xxx')
-
-
-        print('xxx')
+        print('Calculate Similarity Finish...')
