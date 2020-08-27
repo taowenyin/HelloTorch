@@ -31,18 +31,20 @@ if __name__ == '__main__':
     # 构建完整数据集
     df = pd.read_excel('./data/Path/situation_0821.xlsx', sheet_name=sheets_name)
     dataset = []
+    lon_lat_data_y = []
     for v in df:
         data_item = df[v]
         data_item = data_item[data_item.keys().to_numpy()].to_numpy()
+        # 经纬度时序数据
+        lon_lat_data_y_item = data_item[:, 9:11]
         dataset.append(data_item)
+        lon_lat_data_y.append(np.array(lon_lat_data_y_item, dtype=np.float))
     dataset = np.array(dataset)
-
-    # 经纬度时序数据
-    lon_lat_data_y = np.array(dataset[:, :, 9:11], dtype=np.float)
+    lon_lat_data_y = np.array(lon_lat_data_y)
     lon_lat_data_x = []
     # 构建时序标签
     for i in range(lon_lat_data_y.shape[0]):
-        data_len = lon_lat_data_y.shape[1]
+        data_len = lon_lat_data_y[i].shape[0]
         data_y = np.arange(0, data_len)
         lon_lat_data_x.append(data_y)
     lon_lat_data_x = np.array(lon_lat_data_x)
@@ -118,7 +120,9 @@ if __name__ == '__main__':
 
                 # 计算余弦相似性
                 sum_sim = 0
-                for j in range(len(lon_lat_data_com)):
+                # 数据长短不一时取短的
+                data_len = min(len(lon_lat_data_item), len(lon_lat_data_com))
+                for j in range(data_len):
                     A = lon_lat_data_item[j]
                     B = lon_lat_data_com[j]
                     num = np.dot(A, B.T)
@@ -126,7 +130,7 @@ if __name__ == '__main__':
                     cos = num / denom  # 余弦值
                     sim = 0.5 + 0.5 * cos  # 归一化
                     sum_sim = sum_sim + cos
-                sim = sum_sim / len(lon_lat_data_com)
+                sim = sum_sim / data_len
                 # 保存相似性数据
                 sim_arr_item.append(str(sim))
             # 保存相似性数据
