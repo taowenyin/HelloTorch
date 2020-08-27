@@ -25,10 +25,8 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     # 计算数据集Sheet标签
-    index_range = np.arange(1, 115)
-    sheets_name = []
-    for v in index_range:
-        sheets_name.append('Sheet{0}'.format(v))
+    file = pd.ExcelFile('./data/Path/situation_0821.xlsx')
+    sheets_name = file.sheet_names
 
     # 构建完整数据集
     df = pd.read_excel('./data/Path/situation_0821.xlsx', sheet_name=sheets_name)
