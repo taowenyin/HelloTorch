@@ -39,15 +39,15 @@ if __name__ == '__main__':
         lon_lat_data_y_item = data_item[:, 9:11]
         dataset.append(data_item)
         lon_lat_data_y.append(np.array(lon_lat_data_y_item, dtype=np.float))
-    dataset = np.array(dataset)
-    lon_lat_data_y = np.array(lon_lat_data_y)
+    dataset = np.array(dataset, dtype=np.object)
+    lon_lat_data_y = np.array(lon_lat_data_y, dtype=np.object)
     lon_lat_data_x = []
     # 构建时序标签
     for i in range(lon_lat_data_y.shape[0]):
         data_len = lon_lat_data_y[i].shape[0]
         data_y = np.arange(0, data_len)
         lon_lat_data_x.append(data_y)
-    lon_lat_data_x = np.array(lon_lat_data_x)
+    lon_lat_data_x = np.array(lon_lat_data_x, dtype=np.object)
 
     if arguments["--pre"]:
         # 表格纵轴
@@ -104,6 +104,7 @@ if __name__ == '__main__':
         sim_arr = []
         # 表格纵轴
         sim_index = []
+        count = 1
         for i in range(len(lon_lat_data_y)):
             lon_lat_data_item = lon_lat_data_y[i]
             sim_arr_item = []
@@ -113,7 +114,6 @@ if __name__ == '__main__':
             for k in range(len(lon_lat_data_y)):
                 if i == k:
                     sim_arr_item.append(-9999)
-                    # sim_arr_item.append(str(1))
                     continue
 
                 # 获得要计算相关性的对象
@@ -138,7 +138,8 @@ if __name__ == '__main__':
                 sim = sum_sim / data_len
                 # 保存相似性数据
                 sim_arr_item.append(sim)
-                # sim_arr_item.append(str(sim))
+                print('Correlation Compute {0}/{1}'.format(count, len(lon_lat_data_y) ** 2 - len(lon_lat_data_y)))
+                count = count + 1
             # 保存相似性数据
             sim_arr.append(sim_arr_item)
 
