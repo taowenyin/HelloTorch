@@ -112,7 +112,8 @@ if __name__ == '__main__':
             sim_index.append(name)
             for k in range(len(lon_lat_data_y)):
                 if i == k:
-                    sim_arr_item.append(str(1))
+                    sim_arr_item.append(-9999)
+                    # sim_arr_item.append(str(1))
                     continue
 
                 # 获得要计算相关性的对象
@@ -122,19 +123,43 @@ if __name__ == '__main__':
                 sum_sim = 0
                 # 数据长短不一时取短的
                 data_len = min(len(lon_lat_data_item), len(lon_lat_data_com))
+                last_dis = None
                 for j in range(data_len):
                     A = lon_lat_data_item[j]
                     B = lon_lat_data_com[j]
-                    num = np.dot(A, B.T)
-                    denom = np.linalg.norm(A) * np.linalg.norm(B)
-                    cos = num / denom  # 余弦值
-                    sim = 0.5 + 0.5 * cos  # 归一化
-                    sum_sim = sum_sim + cos
+                    # 计算欧式距离
+                    dis = np.linalg.norm(A - B)
+                    if last_dis is None:
+                        last_dis = dis
+                    else:
+                        # 计算距离的变化
+                        diff = dis - last_dis
+                        sum_sim = sum_sim + diff
                 sim = sum_sim / data_len
                 # 保存相似性数据
-                sim_arr_item.append(str(sim))
+                sim_arr_item.append(sim)
+                # sim_arr_item.append(str(sim))
             # 保存相似性数据
             sim_arr.append(sim_arr_item)
+
+        sim_arr = np.array(sim_arr)
+        sim_arr = sim_arr.flatten()
+        delete_index = []
+        for i in range(len(sheets_name)):
+            delete_index.append(i * (len(sheets_name) + 1))
+        sim_arr_tmp = np.delete(sim_arr, delete_index)
+        # 归一化数据
+        sim_min, sim_max = np.min(sim_arr_tmp), np.max(sim_arr_tmp)
+        # 限制数据小于
+        sim_arr_tmp = (1 - (sim_arr_tmp - sim_min) / (sim_max - sim_min)) * 0.99
+
+        # 插入自相关的值
+        insert_index = []
+        for i in range(len(sheets_name)):
+            insert_index.append(i * len(sheets_name))
+        sim_arr = np.insert(sim_arr_tmp, insert_index, 1)
+        # 重新变为二维数组
+        sim_arr = sim_arr.reshape(-1, len(sheets_name))
 
         # 创建数据
         df = pd.DataFrame(sim_arr, index=sim_index, columns=sim_index)
