@@ -16,6 +16,7 @@ Options:
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn import linear_model
 from docopt import docopt
@@ -92,6 +93,31 @@ if __name__ == '__main__':
         columns_name.append('coef_2')
         columns_name.append('intercept_1')
         columns_name.append('intercept_2s')
+
+        for i in range(len(pred_data)):
+            # 预测数据
+            pred_data_item = pred_data[i]
+            pred_data_item = np.delete(pred_data_item,
+                                       [len(pred_data_item) - 4, len(pred_data_item) - 3,
+                                        len(pred_data_item) - 2, len(pred_data_item) - 1])
+            longitude_pred_data_item = pred_data_item[::2]
+            latitude_pred_data_item = pred_data_item[1::2]
+            line = plt.plot(longitude_pred_data_item, latitude_pred_data_item, label=pred_y_index[i], marker='o')
+
+            # 数据
+            data_item = lon_lat_data_y[i]
+            data_item = data_item.flatten()
+            longitude_data_item = data_item[::2]
+            latitude_data_item = data_item[1::2]
+            longitude_data_item = longitude_data_item[-100:]
+            latitude_data_item = latitude_data_item[-100:]
+            plt.plot(longitude_data_item, latitude_data_item, linestyle='--', color=line[0].get_color())
+
+        plt.xlabel('Longitude')
+        plt.ylabel('Latitude')
+        plt.title('Predict Path')
+        plt.legend()
+
         # 创建数据
         df = pd.DataFrame(pred_data, index=pred_y_index, columns=columns_name)
         # 写入Excel文件
@@ -162,9 +188,29 @@ if __name__ == '__main__':
         # 重新变为二维数组
         sim_arr = sim_arr.reshape(-1, len(sheets_name))
 
+        # 显示相关性热力图
+        fig, ax = plt.subplots()
+        im = ax.imshow(sim_arr)
+        plt.colorbar(im)
+        # 绘制坐标轴
+        ax.set_xticks(np.arange(len(sim_index)))
+        ax.set_yticks(np.arange(len(sim_index)))
+        ax.set_xticklabels(sim_index)
+        ax.set_yticklabels(sim_index)
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+        # 绘制热力图中的数值
+        for i in range(len(sheets_name)):
+            for j in range(len(sheets_name)):
+                text = ax.text(j, i, '{:.3f}'.format(sim_arr[i, j]), ha='center', va='center', color="w")
+        fig.tight_layout()
+        plt.title("Object Correlation Heatmap")
+
         # 创建数据
         df = pd.DataFrame(sim_arr, index=sim_index, columns=sim_index)
         # 写入Excel文件
         df.to_excel('./out/sim_data.xlsx', sheet_name='sim_data')
 
         print('Calculate Similarity Finish...')
+
+    # 显示所有图表
+    plt.show()
