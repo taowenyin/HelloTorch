@@ -54,6 +54,7 @@ if __name__ == '__main__':
         # 表格纵轴
         pred_y_index = []
         pred_data = []
+        pred_step = 20
 
         for i in range(lon_lat_data_y.shape[0]):
             lon_lat_data_y_item = lon_lat_data_y[i]
@@ -69,8 +70,8 @@ if __name__ == '__main__':
             # 数据预测
             start = lon_lat_data_x_item.shape[0]
             lon_lat_data_pred = []
-            # 计算后100步的预测值
-            for i in range(100):
+            # 计算后50步的预测值
+            for i in range(pred_step):
                 lon_lat_data_x_item_pred = np.array(lon_lat_data_x_item.shape[0] + i).reshape(-1, 1)
                 lon_lat_data_y_item_pred = line_reg.predict(lon_lat_data_x_item_pred)
                 lon_lat_data_item_pred_data = lon_lat_data_y_item_pred[0]
@@ -86,7 +87,7 @@ if __name__ == '__main__':
 
         # 创建数据的列标题
         columns_name = []
-        for i in range(100):
+        for i in range(pred_step):
             columns_name.append('longitude-{0}'.format(i + 1))
             columns_name.append('latitude-{0}'.format(i + 1))
         columns_name.append('coef_1')
@@ -94,6 +95,8 @@ if __name__ == '__main__':
         columns_name.append('intercept_1')
         columns_name.append('intercept_2s')
 
+        # 图表索引
+        plot_index = 1
         for i in range(len(pred_data)):
             # 预测数据
             pred_data_item = pred_data[i]
@@ -102,21 +105,27 @@ if __name__ == '__main__':
                                         len(pred_data_item) - 2, len(pred_data_item) - 1])
             longitude_pred_data_item = pred_data_item[::2]
             latitude_pred_data_item = pred_data_item[1::2]
-            line = plt.plot(longitude_pred_data_item, latitude_pred_data_item, label=pred_y_index[i], marker='o')
 
             # 数据
             data_item = lon_lat_data_y[i]
             data_item = data_item.flatten()
             longitude_data_item = data_item[::2]
             latitude_data_item = data_item[1::2]
-            longitude_data_item = longitude_data_item[-100:]
-            latitude_data_item = latitude_data_item[-100:]
-            plt.plot(longitude_data_item, latitude_data_item, linestyle='--', color=line[0].get_color())
+            longitude_data_item = longitude_data_item[-pred_step:]
+            latitude_data_item = latitude_data_item[-pred_step:]
 
-        plt.xlabel('Longitude')
-        plt.ylabel('Latitude')
-        plt.title('Predict Path')
-        plt.legend()
+            plt.subplot(2, 2, plot_index)
+            plt.title('{0} Predict'.format(pred_y_index[i]))
+            line = plt.plot(longitude_pred_data_item, latitude_pred_data_item, label='Predict', marker='o')
+            plt.plot(longitude_data_item, latitude_data_item, label='History', linestyle='--',
+                     color=line[0].get_color(), marker='^')
+            plt.xlabel('Longitude')
+            plt.ylabel('Latitude')
+            plt.legend()
+            plot_index = plot_index + 1
+            if ((i + 1) % 4) == 0 or (i + 1) == len(pred_data):
+                plot_index = 1
+                plt.show()
 
         # 创建数据
         df = pd.DataFrame(pred_data, index=pred_y_index, columns=columns_name)
@@ -211,6 +220,5 @@ if __name__ == '__main__':
         df.to_excel('./out/sim_data.xlsx', sheet_name='sim_data')
 
         print('Calculate Similarity Finish...')
-
-    # 显示所有图表
-    plt.show()
+        # 显示所有图表
+        plt.show()
