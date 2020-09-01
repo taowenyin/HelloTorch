@@ -25,12 +25,15 @@ from docopt import docopt
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
+    # 数据集路径
+    datasets_path = './data/Path/situation_0901.xlsx'
+
     # 计算数据集Sheet标签
-    file = pd.ExcelFile('./data/Path/situation_0821.xlsx')
+    file = pd.ExcelFile(datasets_path)
     sheets_name = file.sheet_names
 
     # 构建完整数据集
-    df = pd.read_excel('./data/Path/situation_0821.xlsx', sheet_name=sheets_name)
+    df = pd.read_excel(datasets_path, sheet_name=sheets_name)
     dataset = []
     lon_lat_data_y = []
     for v in df:
