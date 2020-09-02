@@ -27,6 +27,10 @@ if __name__ == '__main__':
 
     # 数据集路径
     datasets_path = './data/Path/situation_0901.xlsx'
+    # 保存路径
+    save_path = './out/'
+    # 设置图像为1600x900
+    plt.figure(figsize=(16, 9))
 
     # 计算数据集Sheet标签
     file = pd.ExcelFile(datasets_path)
@@ -98,8 +102,6 @@ if __name__ == '__main__':
         columns_name.append('intercept_1')
         columns_name.append('intercept_2s')
 
-        # 图表索引
-        plot_index = 1
         for i in range(len(pred_data)):
             # 预测数据
             pred_data_item = pred_data[i]
@@ -109,7 +111,7 @@ if __name__ == '__main__':
             longitude_pred_data_item = pred_data_item[::2]
             latitude_pred_data_item = pred_data_item[1::2]
 
-            # 数据
+            # 历史数据
             data_item = lon_lat_data_y[i]
             data_item = data_item.flatten()
             longitude_data_item = data_item[::2]
@@ -117,7 +119,8 @@ if __name__ == '__main__':
             longitude_data_item = longitude_data_item[-pred_step:]
             latitude_data_item = latitude_data_item[-pred_step:]
 
-            plt.subplot(2, 2, plot_index)
+            # 清空图像
+            plt.clf()
             plt.title('{0} Predict'.format(pred_y_index[i]))
             line = plt.plot(longitude_pred_data_item, latitude_pred_data_item, label='Predict', marker='o')
             plt.plot(longitude_data_item, latitude_data_item, label='History', linestyle='--',
@@ -125,15 +128,15 @@ if __name__ == '__main__':
             plt.xlabel('Longitude')
             plt.ylabel('Latitude')
             plt.legend()
-            plot_index = plot_index + 1
-            if ((i + 1) % 4) == 0 or (i + 1) == len(pred_data):
-                plot_index = 1
-                plt.show()
+            # 保存预测图像
+            plt.savefig(save_path + '{0}_predict.png'.format(pred_y_index[i]))
+            # 清空图像
+            plt.clf()
 
         # 创建数据
         df = pd.DataFrame(pred_data, index=pred_y_index, columns=columns_name)
         # 写入Excel文件
-        df.to_excel('./out/pred_data.xlsx', sheet_name='pred_data')
+        df.to_excel(save_path + 'pred_data.xlsx', sheet_name='pred_data')
 
         print('Predict Data Finish...')
 
@@ -215,12 +218,14 @@ if __name__ == '__main__':
             for j in range(len(sheets_name)):
                 text = ax.text(j, i, '{:.3f}'.format(sim_arr[i, j]), ha='center', va='center', color="w")
         fig.tight_layout()
-        plt.title("Object Correlation Heatmap")
+        plt.title('Object Correlation Heatmap')
+        # 保存图片
+        plt.savefig(save_path + 'object-correlation-heatmap.png')
 
         # 创建数据
         df = pd.DataFrame(sim_arr, index=sim_index, columns=sim_index)
         # 写入Excel文件
-        df.to_excel('./out/sim_data.xlsx', sheet_name='sim_data')
+        df.to_excel(save_path + 'sim_data.xlsx', sheet_name='sim_data')
 
         print('Calculate Similarity Finish...')
         # 显示所有图表
