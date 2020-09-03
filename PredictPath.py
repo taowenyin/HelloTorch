@@ -16,10 +16,35 @@ Options:
 
 import pandas as pd
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 
 from sklearn import linear_model
+from sklearn.tree import DecisionTreeRegressor
 from docopt import docopt
+
+
+def calc_angle(x_point_s,y_point_s,x_point_e,y_point_e):
+    angle = 0
+    y_se = y_point_e - y_point_s
+    x_se = x_point_e - x_point_s
+    if x_se == 0 and y_se > 0:
+        angle = 360
+    if x_se == 0 and y_se < 0:
+        angle = 180
+    if y_se == 0 and x_se > 0:
+        angle = 90
+    if y_se == 0 and x_se < 0:
+        angle = 270
+    if x_se > 0 and y_se > 0:
+        angle = math.atan(x_se / y_se) * 180 / math.pi
+    elif x_se < 0 and y_se > 0:
+        angle = 360 + math.atan(x_se / y_se) * 180 / math.pi
+    elif x_se < 0 and y_se < 0:
+        angle = 180 + math.atan(x_se / y_se) * 180 / math.pi
+    elif x_se > 0 and y_se < 0:
+        angle = 180 + math.atan(x_se / y_se) * 180 / math.pi
+    return angle
 
 
 if __name__ == '__main__':
@@ -61,7 +86,7 @@ if __name__ == '__main__':
         # 表格纵轴
         pred_y_index = []
         pred_data = []
-        pred_step = 20
+        pred_step = 7000
 
         for i in range(lon_lat_data_y.shape[0]):
             lon_lat_data_y_item = lon_lat_data_y[i]
@@ -70,27 +95,29 @@ if __name__ == '__main__':
             name = dataset[i][0][0]
 
             # 构建线性回归模型
-            line_reg = linear_model.LinearRegression()
+            # regModel = linear_model.LinearRegression()
+            regModel = DecisionTreeRegressor(max_depth=8)
+
             # 拟合现有数据
-            line_reg.fit(lon_lat_data_x_item, lon_lat_data_y_item)
+            regModel.fit(lon_lat_data_x_item, lon_lat_data_y_item)
 
             # 数据预测
-            start = lon_lat_data_x_item.shape[0]
-            lon_lat_data_pred = []
-            # 计算后50步的预测值
-            for i in range(pred_step):
-                lon_lat_data_x_item_pred = np.array(lon_lat_data_x_item.shape[0] + i).reshape(-1, 1)
-                lon_lat_data_y_item_pred = line_reg.predict(lon_lat_data_x_item_pred)
-                lon_lat_data_item_pred_data = lon_lat_data_y_item_pred[0]
-                lon_lat_data_pred.append(lon_lat_data_item_pred_data)
-            lon_lat_data_item_coef_data = line_reg.coef_.flatten()
-            lon_lat_data_item_intercept_data = line_reg.intercept_
-            lon_lat_data_pred = np.array(lon_lat_data_pred).flatten()
+            lon_lat_index_pred = np.arange(lon_lat_data_x_item.shape[0] + 1,
+                                           lon_lat_data_x_item.shape[0] + 1 + pred_step).reshape(-1, 1)
+            lon_lat_data_pred = regModel.predict(lon_lat_index_pred)
+
+            # lon_lat_data_item_coef_data = regModel.coef_.flatten()
+            # lon_lat_data_item_intercept_data = regModel.intercept_
+            lon_lat_data_item_coef_data = [0, 0]
+            lon_lat_data_item_intercept_data = [0, 0]
 
             # 构建保存数据
+            lon_lat_data_pred = np.array(lon_lat_data_pred).flatten()
             pred_data.append(np.hstack((np.hstack((lon_lat_data_pred, lon_lat_data_item_coef_data)),
                                         lon_lat_data_item_intercept_data)))
             pred_y_index.append(name)
+
+            print('Predict Path {0}/{1}'.format(i + 1, lon_lat_data_y.shape[0]))
 
         # 创建数据的列标题
         columns_name = []
@@ -119,19 +146,23 @@ if __name__ == '__main__':
             longitude_data_item = longitude_data_item[-pred_step:]
             latitude_data_item = latitude_data_item[-pred_step:]
 
+            # 计算预测线与正北角度
+            angle = calc_angle(longitude_pred_data_item[0], latitude_pred_data_item[0],
+                               longitude_pred_data_item[-1], latitude_pred_data_item[-1])
             # 清空图像
             plt.clf()
-            plt.title('{0} Predict'.format(pred_y_index[i]))
-            line = plt.plot(longitude_pred_data_item, latitude_pred_data_item, label='Predict', marker='o')
+            plt.title('{} Predict, Angle {:.2f}'.format(pred_y_index[i], angle))
             plt.plot(longitude_data_item, latitude_data_item, label='History', linestyle='--',
-                     color=line[0].get_color(), marker='^')
+                     color='orange', marker='^', markerfacecolor='orange')
+            plt.plot(longitude_pred_data_item, latitude_pred_data_item, label='Predict', marker='o')
+            # 添加标记
+            plt.text(longitude_pred_data_item[0], latitude_pred_data_item[0], '1')
+            plt.text(longitude_pred_data_item[-1], latitude_pred_data_item[-1], len(longitude_pred_data_item))
             plt.xlabel('Longitude')
             plt.ylabel('Latitude')
             plt.legend()
             # 保存预测图像
             plt.savefig(save_path + '{0}_predict.png'.format(pred_y_index[i]))
-            # 清空图像
-            plt.clf()
 
         # 创建数据
         df = pd.DataFrame(pred_data, index=pred_y_index, columns=columns_name)
