@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 
 from sklearn import linear_model
 from docopt import docopt
+from sklearn.preprocessing import PolynomialFeatures
 
 
 # 计算角度
@@ -96,6 +97,10 @@ if __name__ == '__main__':
 
             # 构建线性回归模型
             regModel = linear_model.LinearRegression()
+            # 构建输入特征
+            poly_reg = PolynomialFeatures(degree=2)
+            # 获取输入特征
+            lon_lat_data_x_item = poly_reg.fit_transform(lon_lat_data_x_item)
 
             # 拟合现有数据
             regModel.fit(lon_lat_data_x_item, lon_lat_data_y_item)
@@ -103,7 +108,9 @@ if __name__ == '__main__':
             # 数据预测
             lon_lat_index_pred = np.arange(lon_lat_data_x_item.shape[0] + 1,
                                            lon_lat_data_x_item.shape[0] + 1 + pred_step).reshape(-1, 1)
-            lon_lat_data_pred = regModel.predict(lon_lat_index_pred)
+            # 预测的输入特征转化为构建的特征
+            lon_lat_index_pred = poly_reg.transform(lon_lat_index_pred)
+            lon_lat_data_pred = np.around(regModel.predict(lon_lat_index_pred), 6)
 
             # 构建保存数据
             lon_lat_data_pred = np.array(lon_lat_data_pred).flatten()
