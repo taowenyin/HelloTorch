@@ -20,10 +20,10 @@ import math
 import matplotlib.pyplot as plt
 
 from sklearn import linear_model
-from sklearn.tree import DecisionTreeRegressor
 from docopt import docopt
 
 
+# 计算角度
 def calc_angle(x_point_s,y_point_s,x_point_e,y_point_e):
     angle = 0
     y_se = y_point_e - y_point_s
@@ -95,8 +95,7 @@ if __name__ == '__main__':
             name = dataset[i][0][0]
 
             # 构建线性回归模型
-            # regModel = linear_model.LinearRegression()
-            regModel = DecisionTreeRegressor(max_depth=8)
+            regModel = linear_model.LinearRegression()
 
             # 拟合现有数据
             regModel.fit(lon_lat_data_x_item, lon_lat_data_y_item)
@@ -106,15 +105,9 @@ if __name__ == '__main__':
                                            lon_lat_data_x_item.shape[0] + 1 + pred_step).reshape(-1, 1)
             lon_lat_data_pred = regModel.predict(lon_lat_index_pred)
 
-            # lon_lat_data_item_coef_data = regModel.coef_.flatten()
-            # lon_lat_data_item_intercept_data = regModel.intercept_
-            lon_lat_data_item_coef_data = [0, 0]
-            lon_lat_data_item_intercept_data = [0, 0]
-
             # 构建保存数据
             lon_lat_data_pred = np.array(lon_lat_data_pred).flatten()
-            pred_data.append(np.hstack((np.hstack((lon_lat_data_pred, lon_lat_data_item_coef_data)),
-                                        lon_lat_data_item_intercept_data)))
+            pred_data.append(lon_lat_data_pred)
             pred_y_index.append(name)
 
             print('Predict Path {0}/{1}'.format(i + 1, lon_lat_data_y.shape[0]))
@@ -124,17 +117,10 @@ if __name__ == '__main__':
         for i in range(pred_step):
             columns_name.append('longitude-{0}'.format(i + 1))
             columns_name.append('latitude-{0}'.format(i + 1))
-        columns_name.append('coef_1')
-        columns_name.append('coef_2')
-        columns_name.append('intercept_1')
-        columns_name.append('intercept_2s')
 
         for i in range(len(pred_data)):
             # 预测数据
             pred_data_item = pred_data[i]
-            pred_data_item = np.delete(pred_data_item,
-                                       [len(pred_data_item) - 4, len(pred_data_item) - 3,
-                                        len(pred_data_item) - 2, len(pred_data_item) - 1])
             longitude_pred_data_item = pred_data_item[::2]
             latitude_pred_data_item = pred_data_item[1::2]
 
