@@ -18,11 +18,12 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import sys
 
 from sklearn import linear_model
 from docopt import docopt
 from sklearn.preprocessing import PolynomialFeatures
-
+from utils.frechetdist import frdist
 
 # 计算角度
 def calc_angle(x_point_s,y_point_s,x_point_e,y_point_e):
@@ -51,12 +52,15 @@ def calc_angle(x_point_s,y_point_s,x_point_e,y_point_e):
 if __name__ == '__main__':
     arguments = docopt(__doc__)
 
+    # 设置最大递归限制
+    sys.setrecursionlimit(15000)
+
     # 数据集路径
     datasets_path = './data/Path/situation_0901.xlsx'
     # 保存路径
     save_path = './out/'
     # 设置图像为1600x900
-    plt.figure(figsize=(16, 9))
+    plt.figure(figsize=(19.2, 10.8))
 
     # 计算数据集Sheet标签
     file = pd.ExcelFile(datasets_path)
@@ -184,23 +188,24 @@ if __name__ == '__main__':
                 # 获得要计算相关性的对象
                 lon_lat_data_com = lon_lat_data_y[k]
 
-                # 计算余弦相似性
-                sum_sim = 0
-                # 数据长短不一时取短的
-                data_len = min(len(lon_lat_data_item), len(lon_lat_data_com))
-                last_dis = None
-                for j in range(data_len):
-                    A = lon_lat_data_item[j]
-                    B = lon_lat_data_com[j]
-                    # 计算欧式距离
-                    dis = np.linalg.norm(A - B)
-                    if last_dis is None:
-                        last_dis = dis
-                    else:
-                        # 计算距离的变化
-                        diff = dis - last_dis
-                        sum_sim = sum_sim + diff
-                sim = sum_sim / data_len
+                # 计算Fréchet distance 相似性
+                sim = frdist(lon_lat_data_item, lon_lat_data_com)
+                print('{0}-{1} Sim = {2}'.format(sim_index[i], sim_index[k], sim))
+                # # 数据长短不一时取短的
+                # data_len = min(len(lon_lat_data_item), len(lon_lat_data_com))
+                # last_dis = None
+                # for j in range(data_len):
+                #     A = lon_lat_data_item[j]
+                #     B = lon_lat_data_com[j]
+                #     # 计算欧式距离
+                #     dis = np.linalg.norm(A - B)
+                #     if last_dis is None:
+                #         last_dis = dis
+                #     else:
+                #         # 计算距离的变化
+                #         diff = (dis - last_dis)
+                #         sum_sim = sum_sim + diff
+                # sim = sum_sim / data_len
                 # 保存相似性数据
                 sim_arr_item.append(sim)
                 print('Correlation Compute {0}/{1}'.format(count, len(lon_lat_data_y) ** 2 - len(lon_lat_data_y)))
@@ -216,8 +221,8 @@ if __name__ == '__main__':
         sim_arr_tmp = np.delete(sim_arr, delete_index)
         # 归一化数据
         sim_min, sim_max = np.min(sim_arr_tmp), np.max(sim_arr_tmp)
-        # 限制数据小于
-        sim_arr_tmp = (1 - (sim_arr_tmp - sim_min) / (sim_max - sim_min)) * 0.99
+        # 限制数据小于1
+        sim_arr_tmp = (1 - (sim_arr_tmp - sim_min) / (sim_max - sim_min))
 
         # 插入自相关的值
         insert_index = []
@@ -228,7 +233,7 @@ if __name__ == '__main__':
         sim_arr = sim_arr.reshape(-1, len(sheets_name))
 
         # 显示相关性热力图
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(1, 1, figsize=(19.2, 10.8))
         im = ax.imshow(sim_arr)
         plt.colorbar(im)
         # 绘制坐标轴
