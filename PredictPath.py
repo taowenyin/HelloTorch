@@ -189,23 +189,24 @@ if __name__ == '__main__':
                 lon_lat_data_com = lon_lat_data_y[k]
 
                 # 计算Fréchet distance（弗雷歇距离）相似性
-                sim = frdist(lon_lat_data_item, lon_lat_data_com)
-                print('{0}-{1} Sim = {2}'.format(dataset[i][0][0], dataset[k][0][0], sim))
-                # # 数据长短不一时取短的
-                # data_len = min(len(lon_lat_data_item), len(lon_lat_data_com))
-                # last_dis = None
-                # for j in range(data_len):
-                #     A = lon_lat_data_item[j]
-                #     B = lon_lat_data_com[j]
-                #     # 计算欧式距离
-                #     dis = np.linalg.norm(A - B)
-                #     if last_dis is None:
-                #         last_dis = dis
-                #     else:
-                #         # 计算距离的变化
-                #         diff = (dis - last_dis)
-                #         sum_sim = sum_sim + diff
-                # sim = sum_sim / data_len
+                # sim = frdist(lon_lat_data_item, lon_lat_data_com)
+                # print('{0}-{1} Sim = {2}'.format(dataset[i][0][0], dataset[k][0][0], sim))
+                sum_sim = 0
+                # 数据长短不一时取短的
+                data_len = min(len(lon_lat_data_item), len(lon_lat_data_com))
+                last_dis = None
+                for j in range(data_len):
+                    A = lon_lat_data_item[j]
+                    B = lon_lat_data_com[j]
+                    # 计算欧式距离
+                    dis = np.linalg.norm(A - B)
+                    if last_dis is None:
+                        last_dis = dis
+                    else:
+                        # 计算距离的变化
+                        diff = (dis - last_dis)
+                        sum_sim = sum_sim + diff
+                sim = sum_sim / data_len
                 # 保存相似性数据
                 sim_arr_item.append(sim)
                 print('Correlation Compute {0}/{1}'.format(count, len(lon_lat_data_y) ** 2 - len(lon_lat_data_y)))
