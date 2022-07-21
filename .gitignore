@@ -7,3 +7,4 @@ out/*.png
 *.hdf5
 *.pkl
 test.py
+*.pth
