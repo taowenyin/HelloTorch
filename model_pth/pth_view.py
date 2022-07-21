@@ -1,5 +1,6 @@
 import torch
 
+# https://www.cnblogs.com/codehome/p/16453848.html
 
 if __name__ == '__main__':
     content_1 = torch.load('cmt_tiny.pth')
