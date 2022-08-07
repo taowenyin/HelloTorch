@@ -20,9 +20,10 @@ from timm.models.registry import register_model
 _logger = logging.getLogger(__name__)
 
 
-def _cfg(url='', **kwargs):
+def _cfg(file='', **kwargs):
     return {
-        'url': url,
+        # 'url': url,
+        'file': file,
         'input_size': (3, 224, 224), 'pool_size': None,
         'crop_pct': .9, 'interpolation': 'bicubic',
         'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
@@ -192,12 +193,65 @@ class PatchEmbed(nn.Module):
 
 
 class CMT(nn.Module):
-    def __init__(self, img_size=224, in_chans=3, embed_dims=[46, 92, 184, 368], stem_channel=16,
-                 fc_dim=1280,
-                 num_heads=[1, 2, 4, 8], mlp_ratios=[3.6, 3.6, 3.6, 3.6], qkv_bias=True, qk_scale=None,
-                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0., hybrid_backbone=None, norm_layer=None,
-                 depths=[2, 2, 10, 2], qk_ratio=1, sr_ratios=[8, 4, 2, 1], dp=0.1):
+    def __init__(self,
+                 depth='tiny',
+                 img_size=224,
+                 in_chans=3,
+                 embed_dims=[46, 92, 184, 368],
+                 stem_channel=16,
+                 num_heads=[1, 2, 4, 8],
+                 mlp_ratios=[3.6, 3.6, 3.6, 3.6],
+                 qkv_bias=True,
+                 qk_scale=None,
+                 drop_rate=0.,
+                 attn_drop_rate=0.,
+                 drop_path_rate=0.,
+                 norm_layer=None,
+                 depths=[2, 2, 10, 2],
+                 qk_ratio=1,
+                 sr_ratios=[8, 4, 2, 1]):
         super().__init__()
+
+        if 'base' == depth:
+            img_size = 256
+            qkv_bias = True
+            embed_dims = [76, 152, 304, 608]
+            stem_channel = 38
+            num_heads = [1, 2, 4, 8]
+            depths = [4, 4, 20, 4]
+            mlp_ratios = [4, 4, 4, 4]
+            qk_ratio = 1
+            sr_ratios = [8, 4, 2, 1]
+            pass
+        elif 'small' == depth:
+            img_size = 224
+            qkv_bias = True
+            embed_dims = [64, 128, 256, 512]
+            stem_channel = 32
+            num_heads = [1, 2, 4, 8]
+            depths = [3, 3, 16, 3]
+            mlp_ratios = [4, 4, 4, 4]
+            qk_ratio = 1
+            sr_ratios = [8, 4, 2, 1]
+            pass
+        elif 'xs' == depth:
+            img_size = 192
+            qkv_bias = True
+            embed_dims = [52, 104, 208, 416]
+            stem_channel = 16
+            num_heads = [1, 2, 4, 8]
+            depths = [3, 3, 12, 3]
+            mlp_ratios = [3.77, 3.77, 3.77, 3.77]
+            qk_ratio = 1
+            sr_ratios = [8, 4, 2, 1]
+            pass
+        elif 'tiny' == depth:
+            img_size = 160
+            qkv_bias=True
+        else:
+            img_size = 160
+            qkv_bias=True
+
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
 
         self.stem_conv1 = nn.Conv2d(3, stem_channel, kernel_size=3, stride=2, padding=1, bias=True)
@@ -372,16 +426,21 @@ def checkpoint_filter_fn(state_dict, model):
 def _create_cmt_model(pretrained=False, **kwargs):
     default_cfg = _cfg()
     default_img_size = default_cfg['input_size'][-1]
+    default_file = default_cfg['file']
 
     img_size = kwargs.pop('img_size', default_img_size)
+    checkpoint_file = kwargs.pop('file', default_file)
 
     model = CMT(img_size=img_size, **kwargs)
     model.default_cfg = default_cfg
 
     if pretrained:
+        pretrained_cfg = {}
+        pretrained_cfg['file'] = checkpoint_file
+        model.pretrained_cfg = pretrained_cfg
         load_pretrained(
             model, in_chans=kwargs.get('in_chans', 3),
-            filter_fn=partial(checkpoint_filter_fn, model=model))
+            filter_fn=partial(checkpoint_filter_fn, model=model), strict=False)
 
     return model
 
@@ -427,12 +486,45 @@ def cmt_b(pretrained=False, **kwargs):
     """
     model_kwargs = dict(
         qkv_bias=True, embed_dims=[76, 152, 304, 608], stem_channel=38, num_heads=[1, 2, 4, 8],
-        depths=[4, 4, 20, 4], mlp_ratios=[4, 4, 4, 4], qk_ratio=1, sr_ratios=[8, 4, 2, 1], dp=0.3, **kwargs)
+        depths=[4, 4, 20, 4], mlp_ratios=[4, 4, 4, 4], qk_ratio=1, sr_ratios=[8, 4, 2, 1], **kwargs)
     model = _create_cmt_model(pretrained=pretrained, **model_kwargs)
     return model
 
 
 if __name__ == '__main__':
-    model = cmt_b(pretrained=True, url='./checkpoints/cmt_base.pth')
+    # model_t = cmt_ti(pretrained=True, img_size=160, file='./checkpoints/cmt_tiny.pth')
+    # model_x = cmt_xs(pretrained=True, img_size=192, file='./checkpoints/cmt_xs.pth')
+    # model_s = cmt_s(pretrained=True, img_size=224, file='./checkpoints/cmt_small.pth')
+    # model_b = cmt_b(pretrained=True, img_size=256, file='./checkpoints/cmt_base.pth')
+
+    pretrained_cfg = {}
+
+    model_t = CMT(depth='tiny')
+    pretrained_cfg['file'] = './checkpoints/cmt_tiny.pth'
+    model_t.pretrained_cfg = pretrained_cfg
+    load_pretrained(model_t, in_chans=3,
+                    filter_fn=partial(checkpoint_filter_fn, model=model_t),
+                    strict=True)
+
+    model_x = CMT(depth='xs')
+    pretrained_cfg['file'] = './checkpoints/cmt_xs.pth'
+    model_x.pretrained_cfg = pretrained_cfg
+    load_pretrained(model_x, in_chans=3,
+                    filter_fn=partial(checkpoint_filter_fn, model=model_x),
+                    strict=False)
+
+    model_s = CMT(depth='small')
+    pretrained_cfg['file'] = './checkpoints/cmt_small.pth'
+    model_s.pretrained_cfg = pretrained_cfg
+    load_pretrained(model_s, in_chans=3,
+                    filter_fn=partial(checkpoint_filter_fn, model=model_s),
+                    strict=False)
+
+    model_b = CMT(depth='base')
+    pretrained_cfg['file'] = './checkpoints/cmt_base.pth'
+    model_b.pretrained_cfg = pretrained_cfg
+    load_pretrained(model_b, in_chans=3,
+                    filter_fn=partial(checkpoint_filter_fn, model=model_b),
+                    strict=False)
 
     pass
