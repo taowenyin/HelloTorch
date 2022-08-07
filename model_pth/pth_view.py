@@ -9,7 +9,7 @@ class PthUtil:
         print('===初始化PTH工具===')
 
     def view_keys(self, pth_model):
-        print(pth_model.keys())
+        return pth_model.keys()
 
     def save_model(self, pth_model, save_path):
         torch.save(pth_model, save_path)
@@ -47,15 +47,18 @@ class PthUtil:
 
 if __name__ == '__main__':
     util = PthUtil()
-    pth_model = torch.load('./cmt_tiny_mm.pth', map_location=torch.device('cpu'))
-    # util.view_keys(pth_model['state_dict'])
-    # util.view_keys(pth_model)
 
-    util.delete_keys('./cmt_tiny_mm.pth', 'state_dict', ['head.weight', 'head.bias', '_fc.weight', '_fc.bias',
-                                                         '_bn.weight', '_bn.bias', '_bn.running_mean',
-                                                         '_bn.running_var', '_bn.num_batches_tracked',
-                                                         'relative_pos_a', 'relative_pos_b',
-                                                         'relative_pos_c', 'relative_pos_d'])
+    util.modify_root_key_name('./cmt_xs.pth', 'model', 'state_dict')
+
+    pth_model = torch.load('./cmt_xs.pth', map_location=torch.device('cpu'))
+
+    print(util.view_keys(pth_model))
+
+    # util.delete_keys('./cmt_tiny_mm.pth', 'state_dict', ['head.weight', 'head.bias', '_fc.weight', '_fc.bias',
+    #                                                      '_bn.weight', '_bn.bias', '_bn.running_mean',
+    #                                                      '_bn.running_var', '_bn.num_batches_tracked',
+    #                                                      'relative_pos_a', 'relative_pos_b',
+    #                                                      'relative_pos_c', 'relative_pos_d'])
 
 
     # # 修改键值
